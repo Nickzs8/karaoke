@@ -4,8 +4,10 @@ import shutil
 from pathlib import Path
 from typing import BinaryIO
 
+from karaoke.application.ports import AudioStoragePort
 
-class LocalStorageAdapter:
+
+class LocalStorageAdapter(AudioStoragePort):
     """Implementa AudioStoragePort gerenciando arquivos no disco local.
 
     Protege contra ataques de Path Traversal e suporta escrita tanto

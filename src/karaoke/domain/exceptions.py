@@ -21,5 +21,9 @@ class InvalidLyricsTimeError(DomainError):
     """Lançada quando o tempo de início ou fim de uma linha de letra é inválido."""
 
 
+class AudioDownloadError(DomainError):
+    """Lançada quando ocorre uma falha ao baixar ou extrair áudio."""
+
+
 class SongNotReadyError(DomainError):
     """Lançada quando uma música é acessada antes de estar pronta para uso."""

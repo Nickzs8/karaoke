@@ -34,6 +34,10 @@ O projeto segue estritamente a **Clean Architecture**. A violação dessas regra
 ## 2. Padrões de Código e Tipagem
 
 - **Versão do Python**: 3.11+.
+- **Princípio da Responsabilidade Única (SRP / SOLID)**:
+  - **Proibido criar funções "monolíticas" ou gigantescas** que acumulem múltiplos papéis (ex: validação, configuração, chamadas externas, parsing de dados e manipulação de arquivos na mesma função).
+  - Toda operação deve ser decomposta em **pequenas funções coesas e especializadas**, onde cada método faz **uma única coisa bem feita**.
+  - Métodos públicos principais devem atuar apenas como **orquestradores de alto nível**, delegando tarefas específicas para métodos privados bem nomeados e tipados.
 - **Tipagem Estrita**: Todas as funções, métodos e atributos de classe devem conter anotações de tipo (`type hints`).
 - **Data Transfer Objects (DTOs)**:
   - Para a camada web/API: use **Pydantic V2** em `presentation/api/schemas.py`.
@@ -79,6 +83,7 @@ Ao implementar novas funcionalidades, siga esta estratégia de testes:
 
 - [ ] As novas classes respeitam o limite de sua camada?
 - [ ] Nenhuma biblioteca externa foi importada dentro de `domain/` ou `application/`?
+- [ ] As funções seguem o princípio de responsabilidade única (SRP), sem métodos gigantes monolíticos?
 - [ ] Foram adicionados tipos estáticos em todos os argumentos e retornos?
 - [ ] Em caso de incerteza ou ambiguidade, o usuário foi consultado antes de assumir decisões?
 - [ ] Testes unitários foram criados ou atualizados para o novo caso de uso?
