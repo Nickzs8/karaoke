@@ -74,6 +74,9 @@ class FakeAudioStorage:
     def delete_file(self, filename: str, subfolder: str) -> bool:
         return True
 
+    def clean_subfolder(self, subfolder: str) -> int:
+        return 0
+
 
 def test_ports_structural_subtyping() -> None:
     """Verifica que as implementações de teste satisfazem os contratos das Portas."""

@@ -27,3 +27,7 @@ class AudioStoragePort(Protocol):
     def delete_file(self, filename: str, subfolder: str) -> bool:
         """Remove um arquivo do armazenamento caso ele exista."""
         ...
+
+    def clean_subfolder(self, subfolder: str) -> int:
+        """Remove todos os arquivos de um subdiretório e retorna o total removido."""
+        ...
