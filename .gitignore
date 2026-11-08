@@ -1,0 +1,40 @@
+# Ambientes virtuais
+.venv/
+venv/
+ENV/
+env/
+
+# Python cache e compilação
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Mídias e armazenamento local do Karaokê (mantém estrutura com .gitkeep)
+storage/*
+!storage/*/
+!storage/**/.gitkeep
+*.mp3
+*.wav
+*.flac
+*.ogg
+*.m4a
+*.lrc
+
+# Pesos de modelos baixados
+.cache/
+models/
+torch_cache/
+
+# IDEs e editores
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Arquivos de sistema
+.DS_Store
+Thumbs.db
