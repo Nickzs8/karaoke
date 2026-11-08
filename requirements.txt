@@ -1,0 +1,22 @@
+# Framework Web & Servidor
+fastapi>=0.110.0
+uvicorn[standard]>=0.28.0
+python-multipart>=0.0.9
+httpx>=0.27.0
+
+# Download de Mídia
+yt-dlp>=2024.3.10
+
+# Aprendizado de Máquina & Separação de Faixas
+torch>=2.2.0
+torchaudio>=2.2.0
+demucs>=4.0.1
+
+# Processamento de Sinal de Áudio (DSP)
+librosa>=0.10.1
+soundfile>=0.12.1
+scipy>=1.12.0
+numpy>=1.26.0
+
+# Testes Automatizados
+pytest>=8.0.0

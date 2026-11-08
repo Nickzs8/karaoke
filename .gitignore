@@ -3,6 +3,7 @@
 venv/
 ENV/
 env/
+myenv/
 
 # Python cache e compilação
 __pycache__/
@@ -34,6 +35,9 @@ torch_cache/
 .idea/
 *.swp
 *.swo
+
+# Scripts utilitários locais
+scripts/
 
 # Arquivos de sistema
 .DS_Store
