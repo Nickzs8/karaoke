@@ -25,5 +25,9 @@ class AudioDownloadError(DomainError):
     """Lançada quando ocorre uma falha ao baixar ou extrair áudio."""
 
 
+class AudioSeparationError(DomainError):
+    """Lançada quando ocorre uma falha na separação de faixas por IA."""
+
+
 class SongNotReadyError(DomainError):
     """Lançada quando uma música é acessada antes de estar pronta para uso."""
