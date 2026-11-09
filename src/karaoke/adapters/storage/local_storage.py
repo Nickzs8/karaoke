@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import BinaryIO
 
 from karaoke.application.ports import AudioStoragePort
+from karaoke.domain import InvalidStoragePathError
 
 
 class LocalStorageAdapter(AudioStoragePort):
@@ -23,19 +24,19 @@ class LocalStorageAdapter(AudioStoragePort):
         # Extrai apenas o nome final do arquivo, descartando qualquer '../' ou '/'
         clean_filename = Path(filename).name
         if not clean_filename or clean_filename in (".", ".."):
-            raise ValueError(f"Nome de arquivo inválido: '{filename}'")
+            raise InvalidStoragePathError(f"Nome de arquivo inválido: '{filename}'")
 
         # Sanitiza o nome do subdiretório
         clean_subfolder = Path(subfolder).name
         if not clean_subfolder or clean_subfolder in (".", ".."):
-            raise ValueError(f"Nome de subdiretório inválido: '{subfolder}'")
+            raise InvalidStoragePathError(f"Nome de subdiretório inválido: '{subfolder}'")
 
         target_dir = (self.base_dir / clean_subfolder).resolve()
         target_path = (target_dir / clean_filename).resolve()
 
         # Garante que o caminho final reside estritamente dentro de base_dir
         if not target_path.is_relative_to(self.base_dir):
-            raise ValueError(
+            raise InvalidStoragePathError(
                 f"Tentativa de Path Traversal detectada com o arquivo '{filename}'."
             )
 
@@ -69,7 +70,7 @@ class LocalStorageAdapter(AudioStoragePort):
         try:
             target_path = self._resolve_secure_path(filename, subfolder)
             return target_path.is_file()
-        except ValueError:
+        except InvalidStoragePathError:
             return False
 
     def delete_file(self, filename: str, subfolder: str) -> bool:

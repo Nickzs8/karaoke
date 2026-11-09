@@ -35,3 +35,15 @@ class PitchExtractionError(DomainError):
 
 class SongNotReadyError(DomainError):
     """Lançada quando uma música é acessada antes de estar pronta para uso."""
+
+
+class InvalidPitchPointError(DomainError):
+    """Lançada quando os parâmetros de um ponto de afinação são inválidos."""
+
+
+class InvalidScorerConfigError(DomainError):
+    """Lançada quando os parâmetros de configuração do avaliador são inválidos."""
+
+
+class InvalidStoragePathError(DomainError):
+    """Lançada quando um caminho ou arquivo de armazenamento é inválido."""

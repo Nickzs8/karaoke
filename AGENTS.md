@@ -25,8 +25,10 @@ O projeto segue estritamente a **Clean Architecture**. A violação dessas regra
 4. **Raiz de Composição (`src/karaoke/infrastructure/`)**:
    - Apenas o pacote de infraestrutura (ou o container de injeção de dependência) tem permissão para instanciar os adaptadores concretos e conectá-los aos casos de uso.
 
-5. **Exceções de Domínio**:
-   - Crie exceções customizadas para erros de negócio (ex: `SongNotFoundError`, `AudioSeparationError`).
+5. **Exceções de Domínio (Centralização Obrigatória)**:
+   - **TODOS os erros e exceções do sistema devem estar definidos em `src/karaoke/domain/exceptions.py`** e herdar de `DomainError`.
+   - É **terminantemente proibido lançar exceções genéricas nativas do Python** (ex: `ValueError`, `TypeError`, `RuntimeError`) no domínio ou adaptadores para validações de parâmetros, regras de negócio ou falhas operacionais. Lance sempre uma exceção específica de domínio.
+   - Crie exceções customizadas para erros de negócio e validações (ex: `SongNotFoundError`, `InvalidScoreError`, `InvalidPitchPointError`, `InvalidScorerConfigError`, `AudioSeparationError`).
    - Adaptadores devem capturar exceções externas de bibliotecas terceiras e encapsulá-las em exceções de domínio antes de propagá-las.
 
 ---
@@ -86,5 +88,6 @@ Ao implementar novas funcionalidades, siga esta estratégia de testes:
 - [ ] As funções seguem o princípio de responsabilidade única (SRP), sem métodos gigantes monolíticos?
 - [ ] Foram adicionados tipos estáticos em todos os argumentos e retornos?
 - [ ] Em caso de incerteza ou ambiguidade, o usuário foi consultado antes de assumir decisões?
+- [ ] Todos os erros lançados estão definidos em `domain/exceptions.py` herdando de `DomainError` (sem `ValueError` nativo)?
 - [ ] Testes unitários foram criados ou atualizados para o novo caso de uso?
 - [ ] Nenhum arquivo temporário ou binário de áudio foi versionado?

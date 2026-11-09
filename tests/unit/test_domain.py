@@ -8,6 +8,7 @@ import pytest
 
 from karaoke.domain import (
     InvalidLyricsTimeError,
+    InvalidPitchPointError,
     InvalidScoreError,
     LyricsLine,
     Performance,
@@ -73,6 +74,14 @@ class TestPitchCurveValueObjects:
         assert curve.is_empty is False
         assert len(curve.points) == 2
         assert curve.duration == 1.2
+
+    def test_negative_timestamp_raises_domain_error(self) -> None:
+        with pytest.raises(InvalidPitchPointError):
+            PitchPoint(timestamp=-0.1, frequency_hz=440.0)
+
+    def test_negative_frequency_raises_domain_error(self) -> None:
+        with pytest.raises(InvalidPitchPointError):
+            PitchPoint(timestamp=0.1, frequency_hz=-10.0)
 
 
 class TestScoreResultValueObject:

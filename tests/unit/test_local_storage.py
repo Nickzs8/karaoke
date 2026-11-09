@@ -7,6 +7,7 @@ import pytest
 
 from karaoke.adapters.storage import LocalStorageAdapter
 from karaoke.application.ports import AudioStoragePort
+from karaoke.domain import InvalidStoragePathError
 
 
 class TestLocalStorageAdapter:
@@ -101,8 +102,8 @@ class TestLocalStorageAdapter:
         assert safe_path.parent == storage.base_dir / "raw"
 
     @pytest.mark.parametrize("invalid_name", ["", ".", ".."])
-    def test_invalid_names_raise_value_error(
+    def test_invalid_names_raise_domain_error(
         self, storage: LocalStorageAdapter, invalid_name: str
     ) -> None:
-        with pytest.raises(ValueError):
+        with pytest.raises(InvalidStoragePathError):
             storage.get_path(invalid_name, "raw")

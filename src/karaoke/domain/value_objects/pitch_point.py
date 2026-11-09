@@ -3,6 +3,8 @@
 import math
 from dataclasses import dataclass
 
+from karaoke.domain.exceptions import InvalidPitchPointError
+
 
 @dataclass(frozen=True)
 class PitchPoint:
@@ -18,9 +20,9 @@ class PitchPoint:
 
     def __post_init__(self) -> None:
         if self.timestamp < 0.0:
-            raise ValueError("O timestamp não pode ser negativo.")
+            raise InvalidPitchPointError("O timestamp não pode ser negativo.")
         if self.frequency_hz < 0.0:
-            raise ValueError("A frequência em Hertz não pode ser negativa.")
+            raise InvalidPitchPointError("A frequência em Hertz não pode ser negativa.")
 
         if self.midi_note is None:
             if self.frequency_hz > 0.0:
