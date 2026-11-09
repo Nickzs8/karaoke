@@ -51,7 +51,7 @@ class AppConfig:
     lrclib_url: str = "https://lrclib.net/api"
     pitch_weight: float = 0.7
     timing_weight: float = 0.3
-    cents_tolerance: float = 50.0
+    cents_tolerance: float = 75.0
 
     @property
     def raw_storage_dir(self) -> Path:
@@ -109,7 +109,7 @@ class AppConfig:
 
         pitch_weight = float(os.getenv("KARAOKE_PITCH_WEIGHT", "0.7"))
         timing_weight = float(os.getenv("KARAOKE_TIMING_WEIGHT", "0.3"))
-        cents_tolerance = float(os.getenv("KARAOKE_CENTS_TOLERANCE", "50.0"))
+        cents_tolerance = float(os.getenv("KARAOKE_CENTS_TOLERANCE", "75.0"))
 
         return cls(
             base_dir=project_root,

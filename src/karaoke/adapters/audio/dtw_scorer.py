@@ -20,10 +20,10 @@ class DtwPerformanceScorerAdapter(PerformanceScorerPort):
         self,
         pitch_weight: float = 0.7,
         timing_weight: float = 0.3,
-        cents_tolerance: float = 50.0,
-        max_cents_error: float = 200.0,
-        timing_tolerance_seconds: float = 0.15,
-        max_timing_deviation_seconds: float = 1.0,
+        cents_tolerance: float = 75.0,
+        max_cents_error: float = 300.0,
+        timing_tolerance_seconds: float = 0.35,
+        max_timing_deviation_seconds: float = 2.5,
         allow_octave_transposition: bool = True,
     ) -> None:
         """Inicializa o avaliador com parâmetros e tolerâncias configuráveis.
@@ -217,9 +217,9 @@ class DtwPerformanceScorerAdapter(PerformanceScorerPort):
             timing_deviations.append(deviation)
             point_scores.append(self._timing_deviation_to_score(deviation))
 
-        mean_timing_score = float(np.mean(point_scores))
-        mean_deviation = float(np.mean(timing_deviations))
-        max_deviation = float(np.max(timing_deviations))
+        mean_timing_score = float(np.mean(point_scores)) if point_scores else 0.0
+        mean_deviation = float(np.mean(timing_deviations)) if timing_deviations else 0.0
+        max_deviation = float(np.max(timing_deviations)) if timing_deviations else 0.0
         return mean_timing_score, mean_deviation, max_deviation
 
     def _timing_deviation_to_score(self, deviation_seconds: float) -> float:
@@ -259,6 +259,7 @@ class DtwPerformanceScorerAdapter(PerformanceScorerPort):
             "timing_score": timing_score.value,
             "octave_shift": octave_shift,
             "mean_pitch_error_cents": round(mean_cents_error, 2),
+            "mean_cents_error": round(mean_cents_error, 2),
             "max_pitch_error_cents": round(max_cents_error, 2),
             "mean_timing_deviation_seconds": round(mean_timing_deviation, 4),
             "max_timing_deviation_seconds": round(max_timing_deviation, 4),

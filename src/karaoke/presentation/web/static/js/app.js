@@ -543,7 +543,10 @@ function showScoreModal(score) {
   dom.timingScoreValue.textContent = `${score.timing_score.toFixed(1)}%`;
 
   // Detalhes extras
-  const meanCents = score.details?.mean_cents_error ?? 0;
+  const meanCents =
+    score.details?.mean_pitch_error_cents ??
+    score.details?.mean_cents_error ??
+    0;
   const timingDev = score.details?.mean_timing_deviation_seconds ?? 0;
 
   dom.centsErrorValue.textContent = `${meanCents.toFixed(1)} cents`;

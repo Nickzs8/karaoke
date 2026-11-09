@@ -190,7 +190,7 @@ class TestDtwPerformanceScorerAdapter:
         ref_curve = _create_curve([60.0, 62.0, 64.0], start_time=0.0, time_step=0.2)
         # Afinação perfeita (100.0), mas atraso grande que zera ritmo (0.0)
         # Total esperado: (100 * 0.8) + (0 * 0.2) = 80.0
-        user_curve = _create_curve([60.0, 62.0, 64.0], start_time=2.0, time_step=0.2)
+        user_curve = _create_curve([60.0, 62.0, 64.0], start_time=5.0, time_step=0.2)
 
         result = scorer.score_performance(ref_curve, user_curve)
         assert result.pitch_score.value == 100.0
