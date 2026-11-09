@@ -5,6 +5,13 @@ ENV/
 env/
 myenv/
 
+# Variáveis de ambiente locais (privadas)
+.env
+.env.local
+.env.*.local
+!.env_example
+!.env.example
+
 # Python cache e compilação
 __pycache__/
 *.py[cod]
