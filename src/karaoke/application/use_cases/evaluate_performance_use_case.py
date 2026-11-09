@@ -97,7 +97,8 @@ class EvaluatePerformanceUseCase:
         if not resolved.is_file():
             # Tenta resolver dentro da subpasta processed/{song.id}/vocals.wav
             song_folder_candidate = (
-                self.storage.get_path(song.id, "processed") / Path(song.vocals_path).name
+                self.storage.get_path(song.id, "processed")
+                / Path(song.vocals_path).name
             )
             if song_folder_candidate.is_file():
                 return song_folder_candidate

@@ -22,12 +22,14 @@ class ScoreResult:
         timing_score: Score,
         pitch_weight: float = 0.7,
         timing_weight: float = 0.3,
+        coverage_ratio: float = 1.0,
         details: dict[str, Any] | None = None,
     ) -> "ScoreResult":
-        """Calcula a nota consolidada ponderada entre afinação e ritmo."""
-        weighted_total = (pitch_score.value * pitch_weight) + (
-            timing_score.value * timing_weight
-        )
+        """Calcula a nota ponderada entre afinação, ritmo e cobertura vocal."""
+        bounded_coverage = min(1.0, max(0.0, float(coverage_ratio)))
+        weighted_total = (
+            (pitch_score.value * pitch_weight) + (timing_score.value * timing_weight)
+        ) * bounded_coverage
         total_score = Score(round(weighted_total, 2))
         return cls(
             pitch_score=pitch_score,

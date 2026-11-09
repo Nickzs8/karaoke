@@ -83,6 +83,8 @@ const dom = {
   scoreRating: document.getElementById("scoreRating"),
   pitchScoreValue: document.getElementById("pitchScoreValue"),
   timingScoreValue: document.getElementById("timingScoreValue"),
+  coverageValue: document.getElementById("coverageValue"),
+  latencyValue: document.getElementById("latencyValue"),
   centsErrorValue: document.getElementById("centsErrorValue"),
   timingDevValue: document.getElementById("timingDevValue"),
   pitchCanvas: document.getElementById("pitchChartCanvas"),
@@ -542,6 +544,17 @@ function showScoreModal(score) {
   dom.pitchScoreValue.textContent = `${score.pitch_score.toFixed(1)}%`;
   dom.timingScoreValue.textContent = `${score.timing_score.toFixed(1)}%`;
 
+  const coverage = score.details?.coverage_ratio ?? 100;
+  if (dom.coverageValue) {
+    dom.coverageValue.textContent = `${coverage.toFixed(1)}%`;
+  }
+
+  const latency = score.details?.global_latency_seconds ?? 0;
+  if (dom.latencyValue) {
+    const latSign = latency > 0 ? "+" : "";
+    dom.latencyValue.textContent = `${latSign}${(latency * 1000).toFixed(0)} ms`;
+  }
+
   // Detalhes extras
   const meanCents =
     score.details?.mean_pitch_error_cents ??
@@ -555,16 +568,16 @@ function showScoreModal(score) {
   // Classificação da pontuação
   if (score.total_score >= 85) {
     dom.scoreRating.textContent = "Excelente! Performance de alto nível";
-    dom.scoreRating.style.color = "var(--accent-gold)";
+    dom.scoreRating.style.color = "var(--accent-warning)";
   } else if (score.total_score >= 70) {
     dom.scoreRating.textContent = "Muito Bom! Ótima afinação e ritmo";
     dom.scoreRating.style.color = "var(--accent-green)";
   } else if (score.total_score >= 50) {
     dom.scoreRating.textContent = "Satisfatório! Dentro da média esperada";
-    dom.scoreRating.style.color = "var(--accent-cyan)";
+    dom.scoreRating.style.color = "var(--accent-primary)";
   } else {
     dom.scoreRating.textContent = "Abaixo da média. Pratique mais!";
-    dom.scoreRating.style.color = "var(--accent-pink)";
+    dom.scoreRating.style.color = "var(--accent-danger)";
   }
 
   renderPitchChart(score);
@@ -580,7 +593,7 @@ function renderPitchChart(score) {
   ctx.clearRect(0, 0, width, height);
 
   // Fundo com grid sutil
-  ctx.strokeStyle = "rgba(255, 255, 255, 0.05)";
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.06)";
   ctx.lineWidth = 1;
   for (let y = 0; y < height; y += 30) {
     ctx.beginPath();
@@ -589,12 +602,10 @@ function renderPitchChart(score) {
     ctx.stroke();
   }
 
-  // Curva de Referência (Ciano)
+  // Curva de Referência (Azul Profissional)
   ctx.beginPath();
-  ctx.strokeStyle = "#00f0ff";
-  ctx.lineWidth = 3 * window.devicePixelRatio;
-  ctx.shadowColor = "rgba(0, 240, 255, 0.5)";
-  ctx.shadowBlur = 10;
+  ctx.strokeStyle = "#3b82f6";
+  ctx.lineWidth = 2 * window.devicePixelRatio;
 
   const points = 40;
   for (let i = 0; i <= points; i++) {
@@ -605,11 +616,10 @@ function renderPitchChart(score) {
   }
   ctx.stroke();
 
-  // Curva do Usuário (Roxo / Rosa com pequenas variações baseadas na nota)
+  // Curva do Usuário (Violeta)
   ctx.beginPath();
-  ctx.strokeStyle = "#ec4899";
-  ctx.shadowColor = "rgba(236, 72, 153, 0.5)";
-  ctx.lineWidth = 2.5 * window.devicePixelRatio;
+  ctx.strokeStyle = "#8b5cf6";
+  ctx.lineWidth = 2 * window.devicePixelRatio;
 
   const errorFactor = (100 - score.total_score) / 100;
   for (let i = 0; i <= points; i++) {

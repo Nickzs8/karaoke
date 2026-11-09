@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Karaokê</title>
   <link rel="stylesheet" href="/static/web/css/styles.css">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%2300f0ff%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z%22/><path d=%22M19 10v2a7 7 0 0 1-14 0v-2%22/><line x1=%2212%22 x2=%2212%22 y1=%2219%22 y2=%2222%22/></svg>">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%233b82f6%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z%22/><path d=%22M19 10v2a7 7 0 0 1-14 0v-2%22/><line x1=%2212%22 x2=%2212%22 y1=%2219%22 y2=%2222%22/></svg>">
 </head>
 <body>
   <div class="container">
@@ -13,7 +13,7 @@
     <header class="header">
       <div class="logo-group">
         <div class="logo-icon">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#050b14" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
             <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
             <line x1="12" x2="12" y1="19" y2="22"></line>
@@ -104,7 +104,7 @@
       <section class="card">
         <h2 class="card-title">
           <span>Catálogo de Músicas</span>
-          <span style="font-size: 0.85rem; color: var(--accent-cyan); font-weight: normal;" id="songsCount">(0)</span>
+          <span class="songs-count" id="songsCount">(0)</span>
         </h2>
         <div class="songs-list" id="songsList">
           <div class="empty-state">Carregando catálogo...</div>
@@ -199,6 +199,14 @@
           <div class="metric-value" id="timingScoreValue">--%</div>
         </div>
         <div class="metric-card">
+          <div class="metric-label">Cobertura Vocal</div>
+          <div class="metric-value" id="coverageValue">--%</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Latência Detectada</div>
+          <div class="metric-value" id="latencyValue" style="font-size: 1.1rem;">--</div>
+        </div>
+        <div class="metric-card">
           <div class="metric-label">Desvio em Cents</div>
           <div class="metric-value" id="centsErrorValue" style="font-size: 1.1rem;">--</div>
         </div>
@@ -210,7 +218,7 @@
 
       <div class="pitch-canvas-wrapper">
         <div style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 6px; text-align: left;">
-          Comparação Melódica: <span style="color: #00f0ff;">— Referência</span> vs <span style="color: #ec4899;">— Sua Voz</span>
+          Comparação Melódica: <span style="color: #3b82f6; font-weight: 600;">— Referência</span> vs <span style="color: #8b5cf6; font-weight: 600;">— Sua Voz</span>
         </div>
         <canvas id="pitchChartCanvas"></canvas>
       </div>

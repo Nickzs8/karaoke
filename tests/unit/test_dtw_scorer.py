@@ -1,5 +1,6 @@
 """Testes unitários para o adaptador DtwPerformanceScorerAdapter."""
 
+import numpy as np
 import pytest
 
 from karaoke.adapters.audio import DtwPerformanceScorerAdapter, DtwScorerAdapter
@@ -157,6 +158,7 @@ class TestDtwPerformanceScorerAdapter:
         scorer = DtwPerformanceScorerAdapter(
             timing_tolerance_seconds=0.15,
             max_timing_deviation_seconds=1.0,
+            compensate_latency=False,
         )
 
         # Referência começando em 0.0s
@@ -176,6 +178,61 @@ class TestDtwPerformanceScorerAdapter:
         user_late = _create_curve([60.0, 62.0, 64.0], start_time=1.2, time_step=0.2)
         res_late = scorer.score_performance(ref_curve, user_late)
         assert res_late.timing_score.value == 0.0
+
+    def test_latency_compensation_absorbs_browser_buffer_delay(self) -> None:
+        """Compensação de latência deve detectar offset global e preservar pontuação."""
+        scorer = DtwPerformanceScorerAdapter(
+            timing_tolerance_seconds=0.15,
+            max_timing_deviation_seconds=1.0,
+            compensate_latency=True,
+            max_latency_seconds=1.5,
+        )
+        ref_curve = _create_curve([60.0, 62.0, 64.0], start_time=0.0, time_step=0.2)
+        user_delayed = _create_curve([60.0, 62.0, 64.0], start_time=0.30, time_step=0.2)
+
+        res = scorer.score_performance(ref_curve, user_delayed)
+        assert res.timing_score.value == 100.0
+        assert res.details["global_latency_seconds"] == 0.3
+
+    def test_coverage_ratio_scales_total_score_proportionally(self) -> None:
+        """Cantar apenas uma fração da música escala a nota final proporcionalmente."""
+        scorer = DtwPerformanceScorerAdapter()
+        # Referência completa com 10 notas (2 no início e 8 mais tarde)
+        pts = [
+            PitchPoint(timestamp=round(i * 0.2, 2), frequency_hz=440.0, midi_note=60.0)
+            for i in range(2)
+        ]
+        pts += [
+            PitchPoint(
+                timestamp=round(10.0 + i * 0.2, 2),
+                frequency_hz=440.0,
+                midi_note=60.0,
+            )
+            for i in range(8)
+        ]
+        ref_curve = PitchCurve(points=tuple(pts))
+
+        # Usuário cantou afinado e no ritmo apenas 2 notas (20% de cobertura)
+        user_partial = _create_curve([60.0, 60.0], start_time=0.0, time_step=0.2)
+
+        res = scorer.score_performance(ref_curve, user_partial)
+        assert res.pitch_score.value == 100.0
+        assert res.timing_score.value == 100.0
+        assert res.details["coverage_ratio"] == 20.0
+        # Total ponderado: (100 * 0.7 + 100 * 0.3) * 0.20 = 20.0
+        assert res.total_score.value == 20.0
+
+    def test_sakoe_chiba_window_constraint_penalizes_distant_warping(self) -> None:
+        """Janela temporal impede o DTW de alinhar trechos distantes."""
+        scorer = DtwPerformanceScorerAdapter(max_window_seconds=1.0)
+        cost_matrix = scorer._build_cost_matrix(
+            ref_midi=np.array([60.0, 60.0]),
+            user_midi=np.array([60.0, 60.0]),
+            ref_times=np.array([0.0, 10.0]),
+            user_times=np.array([0.0, 1.0]),
+        )
+        # O par com diff=10.0s > 1.0s deve receber penalidade alta
+        assert cost_matrix[1, 0] > 100.0
 
     def test_weighted_score_consolidation_and_bounds(self) -> None:
         """Garante consolidação ponderada correta e intervalo estrito [0.0, 100.0]."""
@@ -270,3 +327,14 @@ class TestDtwPerformanceScorerAdapter:
                 timing_tolerance_seconds=timing_tol,
                 max_timing_deviation_seconds=max_timing,
             )
+
+    def test_invalid_window_or_latency_raises_domain_error(self) -> None:
+        """Valida que valores inválidos de janela ou latência lançam erro de domínio."""
+        with pytest.raises(InvalidScorerConfigError):
+            DtwPerformanceScorerAdapter(max_window_seconds=0.0)
+
+        with pytest.raises(InvalidScorerConfigError):
+            DtwPerformanceScorerAdapter(max_window_seconds=-1.0)
+
+        with pytest.raises(InvalidScorerConfigError):
+            DtwPerformanceScorerAdapter(max_latency_seconds=-0.5)

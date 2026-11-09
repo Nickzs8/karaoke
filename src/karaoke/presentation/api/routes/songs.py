@@ -14,6 +14,7 @@ from karaoke.presentation.api.dependencies import get_app_container
 from karaoke.presentation.api.schemas import (
     LyricLineResponse,
     LyricsResponse,
+    PerformanceEvaluationResponse,
     SongCatalogItemResponse,
     SongPrepareRequest,
     SongResponse,
@@ -122,7 +123,83 @@ async def get_lyrics(
     )
 
 
+@router.post(
+    "/{id}/evaluate",
+    response_model=PerformanceEvaluationResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Avalia o áudio cantado em relação à música identificada por ID",
+)
+async def evaluate_song(
+    id: str,
+    request: Request,
+    container: ContainerDep,
+) -> PerformanceEvaluationResponse:
+    """Compara as curvas melódicas e rítmicas com a música {id} e calcula a nota."""
+    recording_path = await _resolve_evaluate_recording(request, container, id)
+
+    score_result = await run_in_threadpool(
+        container.evaluate_performance.execute,
+        song_id=id,
+        recording_path=recording_path,
+    )
+
+    return PerformanceEvaluationResponse(
+        total_score=score_result.total_score.value,
+        pitch_score=score_result.pitch_score.value,
+        timing_score=score_result.timing_score.value,
+        details=score_result.details,
+    )
+
+
 # Funções Auxiliares Especializadas (SRP)
+
+
+async def _resolve_evaluate_recording(
+    request: Request,
+    container: AppContainer,
+    song_id: str,
+) -> Path:
+    """Extrai e salva o áudio de gravação enviado via formulário ou path em JSON."""
+    content_type = request.headers.get("content-type", "")
+
+    if "application/json" in content_type:
+        body = await request.json()
+        path_str = body.get("recording_path")
+        if not path_str:
+            raise InvalidAudioFormatError(
+                "O campo 'recording_path' é obrigatório no JSON."
+            )
+        return Path(path_str)
+
+    if "multipart/form-data" in content_type or "form" in content_type:
+        form = await request.form()
+        file_val = form.get("audio_file") or form.get("file")
+        if (
+            not file_val
+            or not isinstance(file_val, UploadFile)
+            or not file_val.filename
+        ):
+            raise InvalidAudioFormatError(
+                "O arquivo de áudio gravado ('audio_file') é obrigatório."
+            )
+        content = await file_val.read()
+        if not content:
+            raise InvalidAudioFormatError(
+                "O arquivo de áudio gravado enviado está vazio."
+            )
+
+        clean_name = Path(file_val.filename).name
+        unique_name = f"rec_{song_id}_{uuid.uuid4().hex[:8]}_{clean_name}"
+        container.storage.save_file(
+            file_data=content,
+            filename=unique_name,
+            subfolder="recordings",
+        )
+        return container.storage.get_path(unique_name, "recordings")
+
+    raise InvalidAudioFormatError(
+        "Formato de requisição inválido. Envie áudio via formulário ou JSON."
+    )
 
 
 async def _resolve_prepare_inputs(

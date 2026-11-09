@@ -103,6 +103,19 @@ class TestScoreResultValueObject:
         assert result.total_score.value == 83.0
         assert result.details["pitch_cents_error"] == 12.5
 
+    def test_score_result_with_coverage_ratio(self) -> None:
+        pitch = Score(80.0)
+        timing = Score(90.0)
+        # (80 * 0.70 + 90 * 0.30) * 0.50 = 83.0 * 0.50 = 41.5
+        result = ScoreResult.calculate(
+            pitch_score=pitch,
+            timing_score=timing,
+            pitch_weight=0.7,
+            timing_weight=0.3,
+            coverage_ratio=0.5,
+        )
+        assert result.total_score.value == 41.5
+
     def test_score_result_is_immutable(self) -> None:
         result = ScoreResult.calculate(
             pitch_score=Score(80.0), timing_score=Score(90.0)

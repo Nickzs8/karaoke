@@ -22,20 +22,26 @@ class DtwPerformanceScorerAdapter(PerformanceScorerPort):
         timing_weight: float = 0.3,
         cents_tolerance: float = 75.0,
         max_cents_error: float = 300.0,
-        timing_tolerance_seconds: float = 0.35,
+        timing_tolerance_seconds: float = 0.50,
         max_timing_deviation_seconds: float = 2.5,
+        max_window_seconds: float = 3.0,
         allow_octave_transposition: bool = True,
+        compensate_latency: bool = True,
+        max_latency_seconds: float = 1.5,
     ) -> None:
         """Inicializa o avaliador com parâmetros e tolerâncias configuráveis.
 
         Args:
             pitch_weight: Peso da afinação na nota consolidada final.
             timing_weight: Peso do ritmo na nota consolidada final.
-            cents_tolerance: Tolerância em cents para nota máxima (50 cents).
+            cents_tolerance: Tolerância em cents para nota máxima (75 cents).
             max_cents_error: Erro em cents acima do qual a afinação zera.
-            timing_tolerance_seconds: Tolerância temporal em segundos para nota máxima.
+            timing_tolerance_seconds: Tolerância temporal em segundos (500ms).
             max_timing_deviation_seconds: Desvio temporal acima do qual o ritmo zera.
+            max_window_seconds: Raio da janela temporal Sakoe-Chiba em segundos.
             allow_octave_transposition: Se deve tolerar diferenças de oitava.
+            compensate_latency: Se compensa atraso estático de buffer do navegador.
+            max_latency_seconds: Limite máximo tolerado para compensação de latência.
         """
         if pitch_weight < 0.0 or timing_weight < 0.0:
             raise InvalidScorerConfigError(
@@ -68,11 +74,21 @@ class DtwPerformanceScorerAdapter(PerformanceScorerPort):
                 "timing_tolerance_seconds."
             )
 
+        if max_window_seconds <= 0.0:
+            raise InvalidScorerConfigError(
+                "max_window_seconds deve ser estritamente maior que zero."
+            )
+        if max_latency_seconds < 0.0:
+            raise InvalidScorerConfigError("max_latency_seconds não pode ser negativo.")
+
         self.cents_tolerance = cents_tolerance
         self.max_cents_error = max_cents_error
         self.timing_tolerance_seconds = timing_tolerance_seconds
         self.max_timing_deviation_seconds = max_timing_deviation_seconds
+        self.max_window_seconds = max_window_seconds
         self.allow_octave_transposition = allow_octave_transposition
+        self.compensate_latency = compensate_latency
+        self.max_latency_seconds = max_latency_seconds
 
     def score_performance(
         self,
@@ -86,18 +102,42 @@ class DtwPerformanceScorerAdapter(PerformanceScorerPort):
         if len(ref_midi) == 0 or len(user_midi) == 0:
             return self._build_empty_score_result(len(ref_midi), len(user_midi))
 
-        octave_shift = self._determine_octave_shift(ref_midi, user_midi)
+        # Fator de Cobertura Vocal: proporção cantada em relação à faixa completa
+        coverage_ratio = float(min(1.0, len(user_midi) / len(ref_midi)))
+
+        # Slicing temporal na referência: restringe busca à janela ativa do usuário
+        user_start = float(user_times[0])
+        user_end = float(user_times[-1])
+        active_ref_mask = (ref_times >= user_start - self.max_window_seconds) & (
+            ref_times <= user_end + self.max_window_seconds
+        )
+        if np.any(active_ref_mask):
+            active_ref_times = ref_times[active_ref_mask]
+            active_ref_midi = ref_midi[active_ref_mask]
+        else:
+            active_ref_times = ref_times
+            active_ref_midi = ref_midi
+
+        octave_shift = self._determine_octave_shift(active_ref_midi, user_midi)
         transposed_user_midi = self._apply_octave_transposition(user_midi, octave_shift)
 
-        cost_matrix = self._build_cost_matrix(ref_midi, transposed_user_midi)
+        cost_matrix = self._build_cost_matrix(
+            ref_midi=active_ref_midi,
+            user_midi=transposed_user_midi,
+            ref_times=active_ref_times,
+            user_times=user_times,
+        )
         warping_path = self._compute_dtw_alignment(cost_matrix)
 
         pitch_score_val, mean_cents, max_cents = self._calculate_pitch_metrics(
-            ref_midi, transposed_user_midi, warping_path
+            active_ref_midi, transposed_user_midi, warping_path
         )
-        timing_score_val, mean_timing, max_timing = self._calculate_timing_metrics(
-            ref_times, user_times, warping_path
-        )
+        (
+            timing_score_val,
+            mean_timing,
+            max_timing,
+            global_latency,
+        ) = self._calculate_timing_metrics(active_ref_times, user_times, warping_path)
 
         return self._build_score_result(
             pitch_score_val=pitch_score_val,
@@ -107,6 +147,8 @@ class DtwPerformanceScorerAdapter(PerformanceScorerPort):
             max_cents_error=max_cents,
             mean_timing_deviation=mean_timing,
             max_timing_deviation=max_timing,
+            global_latency=global_latency,
+            coverage_ratio=coverage_ratio,
             warping_path_length=len(warping_path),
             ref_points_count=len(ref_midi),
             user_points_count=len(user_midi),
@@ -146,14 +188,37 @@ class DtwPerformanceScorerAdapter(PerformanceScorerPort):
         return user_midi + (float(octave_shift) * 12.0)
 
     def _build_cost_matrix(
-        self, ref_midi: np.ndarray, user_midi: np.ndarray
+        self,
+        ref_midi: np.ndarray,
+        user_midi: np.ndarray,
+        ref_times: np.ndarray | None = None,
+        user_times: np.ndarray | None = None,
     ) -> np.ndarray:
-        """Constrói a matriz de custo de distância tonal entre cada par de frames."""
+        """Constrói a matriz de custo tonal com restrição temporal Sakoe-Chiba."""
         diff = ref_midi[:, None] - user_midi[None, :]
         if self.allow_octave_transposition:
             octave_diff = diff - 12.0 * np.round(diff / 12.0)
-            return np.abs(octave_diff)
-        return np.abs(diff)
+            cost = np.abs(octave_diff)
+        else:
+            cost = np.abs(diff)
+
+        # Restrição de Janela Sakoe-Chiba: penaliza saltos temporais excessivos
+        if (
+            self.max_window_seconds > 0.0
+            and ref_times is not None
+            and user_times is not None
+            and len(ref_times) > 0
+            and len(user_times) > 0
+        ):
+            time_diff = np.abs(ref_times[:, None] - user_times[None, :])
+            window_penalty = np.where(
+                time_diff > self.max_window_seconds,
+                100.0 + (time_diff - self.max_window_seconds) * 20.0,
+                0.0,
+            )
+            cost = cost + window_penalty
+
+        return cost
 
     def _compute_dtw_alignment(self, cost_matrix: np.ndarray) -> np.ndarray:
         """Executa o algoritmo Dynamic Time Warping sobre a matriz de custo."""
@@ -204,23 +269,38 @@ class DtwPerformanceScorerAdapter(PerformanceScorerPort):
         ref_timestamps: np.ndarray,
         user_timestamps: np.ndarray,
         warping_path: np.ndarray,
-    ) -> tuple[float, float, float]:
-        """Calcula score de ritmo e desvios a partir do caminho ótimo do DTW."""
-        timing_deviations: list[float] = []
-        point_scores: list[float] = []
+    ) -> tuple[float, float, float, float]:
+        """Calcula score de ritmo, desvios e latência compensada ao longo do DTW."""
+        if len(warping_path) == 0:
+            return 0.0, 0.0, 0.0, 0.0
 
+        signed_diffs: list[float] = []
         for ref_idx, user_idx in warping_path:
             ref_t = float(ref_timestamps[ref_idx])
             user_t = float(user_timestamps[user_idx])
-            deviation = abs(user_t - ref_t)
+            signed_diffs.append(user_t - ref_t)
 
+        # Tolerância a latência de hardware/navegador (offset global)
+        if self.compensate_latency and signed_diffs:
+            raw_median = float(np.median(signed_diffs))
+            global_latency = float(
+                np.clip(raw_median, -self.max_latency_seconds, self.max_latency_seconds)
+            )
+        else:
+            global_latency = 0.0
+
+        timing_deviations: list[float] = []
+        point_scores: list[float] = []
+
+        for diff in signed_diffs:
+            deviation = abs(diff - global_latency)
             timing_deviations.append(deviation)
             point_scores.append(self._timing_deviation_to_score(deviation))
 
         mean_timing_score = float(np.mean(point_scores)) if point_scores else 0.0
         mean_deviation = float(np.mean(timing_deviations)) if timing_deviations else 0.0
         max_deviation = float(np.max(timing_deviations)) if timing_deviations else 0.0
-        return mean_timing_score, mean_deviation, max_deviation
+        return mean_timing_score, mean_deviation, max_deviation, global_latency
 
     def _timing_deviation_to_score(self, deviation_seconds: float) -> float:
         """Converte um desvio temporal em segundos para pontuação de 0.0 a 100.0."""
@@ -243,6 +323,8 @@ class DtwPerformanceScorerAdapter(PerformanceScorerPort):
         max_cents_error: float,
         mean_timing_deviation: float,
         max_timing_deviation: float,
+        global_latency: float,
+        coverage_ratio: float,
         warping_path_length: int,
         ref_points_count: int,
         user_points_count: int,
@@ -254,15 +336,22 @@ class DtwPerformanceScorerAdapter(PerformanceScorerPort):
         pitch_score = Score(bounded_pitch)
         timing_score = Score(bounded_timing)
 
+        raw_total = (pitch_score.value * self.pitch_weight) + (
+            timing_score.value * self.timing_weight
+        )
+
         details: dict[str, Any] = {
             "pitch_score": pitch_score.value,
             "timing_score": timing_score.value,
+            "raw_total_score": round(raw_total, 2),
+            "coverage_ratio": round(coverage_ratio * 100.0, 1),
             "octave_shift": octave_shift,
             "mean_pitch_error_cents": round(mean_cents_error, 2),
             "mean_cents_error": round(mean_cents_error, 2),
             "max_pitch_error_cents": round(max_cents_error, 2),
             "mean_timing_deviation_seconds": round(mean_timing_deviation, 4),
             "max_timing_deviation_seconds": round(max_timing_deviation, 4),
+            "global_latency_seconds": round(global_latency, 4),
             "aligned_points_count": warping_path_length,
             "reference_points_count": ref_points_count,
             "user_points_count": user_points_count,
@@ -273,6 +362,7 @@ class DtwPerformanceScorerAdapter(PerformanceScorerPort):
             timing_score=timing_score,
             pitch_weight=self.pitch_weight,
             timing_weight=self.timing_weight,
+            coverage_ratio=coverage_ratio,
             details=details,
         )
 

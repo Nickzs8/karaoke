@@ -25,7 +25,7 @@ class LibrosaPitchExtractorAdapter(PitchExtractorPort):
         fmax: float = 2093.0,  # ~C7
         frame_length: int = 2048,
         hop_length: int = 512,
-        min_voiced_prob: float = 0.1,
+        min_voiced_prob: float = 0.01,
         energy_threshold: float = 0.005,
     ) -> None:
         self.sample_rate = sample_rate
