@@ -22,8 +22,13 @@ __pycache__/
 htmlcov/
 
 # Mídias e armazenamento local do Karaokê (mantém estrutura com .gitkeep)
-storage/**
+storage/*
+storage/processed/*
+storage/raw/*
+storage/recordings/*
+storage/lyrics/*
 !storage/**/.gitkeep
+!storage/*/.gitkeep
 *.mp3
 *.wav
 *.flac
