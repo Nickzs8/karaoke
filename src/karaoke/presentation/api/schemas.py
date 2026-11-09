@@ -101,6 +101,10 @@ class LyricsResponse(BaseModel):
         default_factory=list,
         description="Lista ordenada de versos sincronizados.",
     )
+    estimated_offset: float = Field(
+        default=0.0,
+        description="Offset em segundos para compensar silêncio inicial do áudio.",
+    )
 
 
 class PerformanceEvaluationResponse(BaseModel):

@@ -51,3 +51,7 @@ class InvalidScorerConfigError(DomainError):
 
 class InvalidStoragePathError(DomainError):
     """Lançada quando um caminho ou arquivo de armazenamento é inválido."""
+
+
+class AudioAnalysisError(DomainError):
+    """Lançada quando ocorre uma falha durante análise de sinal de áudio."""

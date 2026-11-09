@@ -8,6 +8,7 @@ export class AudioPlayer {
     this.audio.preload = "auto";
     this.lyricsLines = [];
     this.currentLineIndex = -1;
+    this.lyricsOffset = 0.0;
 
     // Callbacks de eventos
     this.onTimeUpdate = null;
@@ -49,12 +50,29 @@ export class AudioPlayer {
    * Carrega a faixa de áudio e as letras sincronizadas.
    * @param {string} audioUrl
    * @param {Array} lyricsLines
+   * @param {number} offset
    */
-  load(audioUrl, lyricsLines = []) {
+  load(audioUrl, lyricsLines = [], offset = 0.0) {
     this.lyricsLines = lyricsLines;
+    this.lyricsOffset = Number(offset) || 0.0;
     this.currentLineIndex = -1;
     this.audio.src = audioUrl;
     this.audio.load();
+  }
+
+  /**
+   * Define o offset de sincronia das letras em segundos.
+   * Valores positivos atrasam a letra (para músicas com intro/silêncio).
+   * Valores negativos adiantam a letra.
+   * @param {number} offsetSeconds
+   */
+  setLyricsOffset(offsetSeconds) {
+    this.lyricsOffset = Number(offsetSeconds) || 0.0;
+    this._syncLyrics(this.getCurrentTime());
+  }
+
+  getLyricsOffset() {
+    return this.lyricsOffset;
   }
 
   async play() {
@@ -97,11 +115,14 @@ export class AudioPlayer {
   _syncLyrics(currentTime) {
     if (!this.lyricsLines || this.lyricsLines.length === 0) return;
 
+    // Tempo efetivo ajustado pelo offset temporal de sincronia
+    const effectiveTime = currentTime - this.lyricsOffset;
+
     // Encontra o verso correspondente ao tempo atual
     let activeIndex = -1;
     for (let i = 0; i < this.lyricsLines.length; i++) {
       const line = this.lyricsLines[i];
-      if (currentTime >= line.start_time && currentTime <= line.end_time) {
+      if (effectiveTime >= line.start_time && effectiveTime <= line.end_time) {
         activeIndex = i;
         break;
       }

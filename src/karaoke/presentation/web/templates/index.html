@@ -124,6 +124,23 @@
         </button>
       </div>
 
+      <!-- Barra de Controle de Sincronia da Letra -->
+      <div class="sync-bar" id="syncBar">
+        <div class="sync-info">
+          <span class="sync-title">Sincronia da Letra</span>
+          <span class="sync-subtitle">Compense introduções ou silêncio inicial</span>
+        </div>
+        <div class="sync-controls">
+          <button type="button" class="btn-sync-step" id="btnSyncMinusLarge" title="Adiantar 1 segundo (-1.0s)">-1.0s</button>
+          <button type="button" class="btn-sync-step" id="btnSyncMinusSmall" title="Adiantar 0.2 segundos (-0.2s)">-0.2s</button>
+          <div class="sync-display-pill" id="syncValueDisplay" title="Offset atual da letra">+0.0s</div>
+          <button type="button" class="btn-sync-step" id="btnSyncPlusSmall" title="Atrasar 0.2 segundos (+0.2s)">+0.2s</button>
+          <button type="button" class="btn-sync-step" id="btnSyncPlusLarge" title="Atrasar 1 segundo (+1.0s)">+1.0s</button>
+          <button type="button" class="btn-sync-reset" id="btnSyncReset" title="Zerar ajuste de sincronia">Zerar</button>
+          <button type="button" class="btn-sync-auto" id="btnSyncAuto" style="display: none;" title="Aplicar offset detectado automaticamente">Auto</button>
+        </div>
+      </div>
+
       <!-- Caixa de Letras Sincronizadas -->
       <div class="lyrics-box" id="lyricsBox">
         <div class="empty-state">Selecione uma música no catálogo acima para começar.</div>

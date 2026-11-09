@@ -96,6 +96,18 @@ async def get_lyrics(
         song_id=id,
     )
 
+    estimated_offset = 0.0
+    if lines and hasattr(container.get_lyrics, "estimate_offset"):
+        first_time = lines[0].start_time
+        try:
+            estimated_offset = await run_in_threadpool(
+                container.get_lyrics.estimate_offset,
+                song_id=id,
+                first_lyric_start=first_time,
+            )
+        except Exception:
+            estimated_offset = 0.0
+
     return LyricsResponse(
         song_id=id,
         lines=[
@@ -106,6 +118,7 @@ async def get_lyrics(
             )
             for line in lines
         ],
+        estimated_offset=estimated_offset,
     )
 
 

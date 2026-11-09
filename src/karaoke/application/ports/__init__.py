@@ -12,6 +12,7 @@ from karaoke.application.ports.audio_storage_port import AudioStoragePort
 from karaoke.application.ports.lyrics_provider_port import LyricsProviderPort
 from karaoke.application.ports.performance_scorer_port import PerformanceScorerPort
 from karaoke.application.ports.pitch_extractor_port import PitchExtractorPort
+from karaoke.application.ports.vocal_onset_detector_port import VocalOnsetDetectorPort
 
 __all__ = [
     "AudioDownloaderPort",
@@ -22,4 +23,5 @@ __all__ = [
     "PerformanceScorerPort",
     "PitchExtractorPort",
     "SeparatedTracks",
+    "VocalOnsetDetectorPort",
 ]

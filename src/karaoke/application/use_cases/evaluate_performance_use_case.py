@@ -95,6 +95,13 @@ class EvaluatePerformanceUseCase:
             )
         resolved = Path(song.vocals_path).resolve()
         if not resolved.is_file():
+            parts = Path(song.vocals_path).parts
+            if "processed" in parts:
+                idx = parts.index("processed")
+                rel_subpath = "/".join(parts[idx + 1 :])
+                storage_candidate = self.storage.get_path(rel_subpath, "processed")
+                if storage_candidate.is_file():
+                    return storage_candidate
             raise InvalidStoragePathError(
                 f"Faixa vocal de referência não encontrada: {song.vocals_path}"
             )

@@ -13,6 +13,8 @@ const recorder = new VoiceRecorder();
 let currentSong = null;
 let currentLyrics = [];
 let isEvaluating = false;
+let currentOffset = 0.0;
+let autoEstimatedOffset = 0.0;
 
 // Elementos do DOM
 const dom = {
@@ -54,6 +56,14 @@ const dom = {
   currentSongTitle: document.getElementById("currentSongTitle"),
   currentSongArtist: document.getElementById("currentSongArtist"),
   btnChangeSong: document.getElementById("btnChangeSong"),
+  syncBar: document.getElementById("syncBar"),
+  syncValueDisplay: document.getElementById("syncValueDisplay"),
+  btnSyncMinusLarge: document.getElementById("btnSyncMinusLarge"),
+  btnSyncMinusSmall: document.getElementById("btnSyncMinusSmall"),
+  btnSyncPlusSmall: document.getElementById("btnSyncPlusSmall"),
+  btnSyncPlusLarge: document.getElementById("btnSyncPlusLarge"),
+  btnSyncReset: document.getElementById("btnSyncReset"),
+  btnSyncAuto: document.getElementById("btnSyncAuto"),
   lyricsBox: document.getElementById("lyricsBox"),
 
   // Controles do Player
@@ -84,6 +94,7 @@ const dom = {
 document.addEventListener("DOMContentLoaded", () => {
   setupTabs();
   setupForms();
+  setupSyncControls();
   setupPlayerCallbacks();
   setupRecorderCallbacks();
   setupModalEvents();
@@ -264,19 +275,40 @@ async function selectSong(song) {
   dom.currentSongTitle.textContent = song.title;
   dom.currentSongArtist.textContent = song.artist;
 
+  let activeOffset = 0.0;
+  autoEstimatedOffset = 0.0;
+
   // Carrega letra sincronizada
   try {
     const lyricsData = await api.getLyrics(song.id);
     currentLyrics = lyricsData.lines || [];
+    autoEstimatedOffset =
+      typeof lyricsData.estimated_offset === "number"
+        ? lyricsData.estimated_offset
+        : 0.0;
   } catch {
     currentLyrics = [];
+    autoEstimatedOffset = 0.0;
   }
+
+  // Verifica persistência de offset no localStorage por música
+  const storageKey = `karaoke_offset_${song.id}`;
+  const savedOffset = localStorage.getItem(storageKey);
+
+  if (savedOffset !== null) {
+    activeOffset = parseFloat(savedOffset) || 0.0;
+  } else if (Math.abs(autoEstimatedOffset) >= 0.2) {
+    activeOffset = autoEstimatedOffset;
+  }
+
+  currentOffset = activeOffset;
+  updateSyncDisplay(currentOffset, autoEstimatedOffset);
 
   renderLyrics(currentLyrics);
 
-  // Inicializa o player com a faixa instrumental
+  // Inicializa o player com a faixa instrumental e offset
   if (song.instrumental_url) {
-    player.load(song.instrumental_url, currentLyrics);
+    player.load(song.instrumental_url, currentLyrics, currentOffset);
   }
 
   // Ativa a visão do palco e rola suavemente
@@ -303,9 +335,58 @@ function renderLyrics(lines) {
     const div = document.createElement("div");
     div.className = "lyric-line";
     div.id = `line-${index}`;
+    div.dataset.index = index;
+    div.dataset.startTime = line.start_time;
+    div.title = "Clique para reproduzir a partir deste verso";
     div.textContent = line.text;
+
+    div.addEventListener("click", () => {
+      const targetTime = Math.max(0, line.start_time + player.getLyricsOffset());
+      player.seek(targetTime);
+    });
+
     dom.lyricsBox.appendChild(div);
   });
+}
+
+function setupSyncControls() {
+  function applyOffset(newOffset) {
+    currentOffset = Math.round(newOffset * 10) / 10;
+    if (currentSong) {
+      localStorage.setItem(`karaoke_offset_${currentSong.id}`, currentOffset.toString());
+    }
+    player.setLyricsOffset(currentOffset);
+    updateSyncDisplay(currentOffset, autoEstimatedOffset);
+  }
+
+  dom.btnSyncMinusLarge.addEventListener("click", () => applyOffset(currentOffset - 1.0));
+  dom.btnSyncMinusSmall.addEventListener("click", () => applyOffset(currentOffset - 0.2));
+  dom.btnSyncPlusSmall.addEventListener("click", () => applyOffset(currentOffset + 0.2));
+  dom.btnSyncPlusLarge.addEventListener("click", () => applyOffset(currentOffset + 1.0));
+  dom.btnSyncReset.addEventListener("click", () => applyOffset(0.0));
+  dom.btnSyncAuto.addEventListener("click", () => applyOffset(autoEstimatedOffset));
+
+  window.addEventListener("keydown", (e) => {
+    if (["INPUT", "TEXTAREA"].includes(document.activeElement.tagName)) return;
+    if (e.key === "[") {
+      applyOffset(currentOffset - (e.shiftKey ? 1.0 : 0.2));
+    } else if (e.key === "]") {
+      applyOffset(currentOffset + (e.shiftKey ? 1.0 : 0.2));
+    }
+  });
+}
+
+function updateSyncDisplay(offset, autoOffset) {
+  const sign = offset > 0 ? "+" : "";
+  dom.syncValueDisplay.textContent = `${sign}${offset.toFixed(1)}s`;
+
+  if (autoOffset && Math.abs(autoOffset) >= 0.2) {
+    dom.btnSyncAuto.style.display = "inline-block";
+    const autoSign = autoOffset > 0 ? "+" : "";
+    dom.btnSyncAuto.textContent = `Auto (${autoSign}${autoOffset.toFixed(1)}s)`;
+  } else {
+    dom.btnSyncAuto.style.display = "none";
+  }
 }
 
 function setupPlayerCallbacks() {
@@ -320,7 +401,7 @@ function setupPlayerCallbacks() {
   player.onLineChange = (line, index) => {
     document.querySelectorAll(".lyric-line").forEach((el, i) => {
       el.classList.remove("active");
-      if (i < index) el.classList.add("past");
+      if (index >= 0 && i < index) el.classList.add("past");
       else el.classList.remove("past");
     });
 
@@ -331,6 +412,8 @@ function setupPlayerCallbacks() {
         // Centraliza a linha ativa no painel de letras
         activeEl.scrollIntoView({ behavior: "smooth", block: "center" });
       }
+    } else {
+      dom.lyricsBox.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
 

@@ -514,3 +514,24 @@ class TestGetLyricsUseCase:
             LyricsNotFoundError, match="Letra sincronizada não encontrada"
         ):
             use_case.execute("song_sem_letra")
+
+    def test_estimate_offset_without_detector(self, tmp_path: Path) -> None:
+        storage = FakeStorage(tmp_path)
+        use_case = GetLyricsUseCase(storage=storage)
+        assert use_case.estimate_offset("song_123", 0.5) == 0.0
+
+    def test_estimate_offset_with_detector_success(self, tmp_path: Path) -> None:
+        storage = FakeStorage(tmp_path)
+        vocals_file = tmp_path / "vocals.wav"
+        vocals_file.write_bytes(b"dummy wav data")
+
+        meta = f'{{"id": "song_123", "vocals_path": "{vocals_file}"}}'
+        storage.save_file(meta.encode("utf-8"), "song_123.json", "processed")
+
+        class MockOnsetDetector:
+            def detect_onset(self, audio_path: Path) -> float | None:
+                return 5.4
+
+        use_case = GetLyricsUseCase(storage=storage, onset_detector=MockOnsetDetector())
+        offset = use_case.estimate_offset("song_123", first_lyric_start=0.5)
+        assert offset == 4.9

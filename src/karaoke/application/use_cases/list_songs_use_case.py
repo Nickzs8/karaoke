@@ -78,6 +78,11 @@ class ListSongsUseCase:
         """Gera o link relativo de streaming para a faixa de áudio."""
         if file_path is None:
             return None
-        subfolder = file_path.parent.name
-        filename = file_path.name
-        return f"{self.base_audio_url}/{subfolder}/{filename}"
+        clean_base = self.base_audio_url.rstrip("/")
+        parts = file_path.parts
+        for subfolder_name in ("processed", "raw", "recordings"):
+            if subfolder_name in parts:
+                idx = parts.index(subfolder_name)
+                rel_path = "/".join(parts[idx:])
+                return f"{clean_base}/{rel_path}"
+        return f"{clean_base}/{file_path.name}"

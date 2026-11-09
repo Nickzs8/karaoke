@@ -136,9 +136,9 @@ class PrepareSongUseCase:
         return song
 
     def _separate_audio_tracks(self, audio_path: Path, song_id: str) -> SeparatedTracks:
-        """Executa a separação das faixas vocal e instrumental."""
-        processed_dir = self.storage.get_path(f"{song_id}_target", "processed").parent
-        return self.separator.separate(audio_path, processed_dir)
+        """Executa a separação das faixas vocal e instrumental da música."""
+        output_dir = self.storage.get_path(song_id, "processed")
+        return self.separator.separate(audio_path, output_dir)
 
     def _sync_and_save_lyrics(
         self, song_id: str, title: str, artist: str | None

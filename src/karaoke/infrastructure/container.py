@@ -2,6 +2,7 @@
 
 from karaoke.adapters.audio import (
     DtwPerformanceScorerAdapter,
+    EnergyVocalOnsetDetectorAdapter,
     LibrosaPitchExtractorAdapter,
 )
 from karaoke.adapters.downloaders import YtDlpDownloaderAdapter
@@ -38,6 +39,7 @@ class AppContainer:
         )
         self.lyrics_provider = LrclibAdapter(base_url=self.config.lrclib_url)
         self.pitch_extractor = LibrosaPitchExtractorAdapter()
+        self.onset_detector = EnergyVocalOnsetDetectorAdapter()
         self.scorer = DtwPerformanceScorerAdapter(
             pitch_weight=self.config.pitch_weight,
             timing_weight=self.config.timing_weight,
@@ -62,6 +64,7 @@ class AppContainer:
         )
         self.get_lyrics = GetLyricsUseCase(
             storage=self.storage,
+            onset_detector=self.onset_detector,
         )
 
 

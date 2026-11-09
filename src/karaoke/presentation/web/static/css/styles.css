@@ -489,6 +489,106 @@ body {
   color: var(--accent-cyan);
 }
 
+/* ==========================================================================
+   Barra de Controle de Sincronia da Letra
+   ========================================================================== */
+.sync-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  background: rgba(18, 24, 38, 0.7);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-md);
+  padding: 10px 16px;
+}
+
+.sync-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sync-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.3px;
+}
+
+.sync-subtitle {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+}
+
+.sync-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-sync-step,
+.btn-sync-reset,
+.btn-sync-auto {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-glass);
+  color: var(--text-main);
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 500;
+  padding: 5px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-sync-step:hover {
+  background: rgba(0, 240, 255, 0.15);
+  border-color: var(--accent-cyan);
+  color: #fff;
+}
+
+.btn-sync-step:active {
+  transform: scale(0.95);
+}
+
+.sync-display-pill {
+  min-width: 60px;
+  text-align: center;
+  font-family: monospace;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--accent-cyan);
+  background: rgba(0, 240, 255, 0.08);
+  border: 1px solid rgba(0, 240, 255, 0.3);
+  border-radius: 6px;
+  padding: 5px 8px;
+  user-select: none;
+}
+
+.btn-sync-reset {
+  color: var(--text-dim);
+}
+
+.btn-sync-reset:hover {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+.btn-sync-auto {
+  background: rgba(0, 240, 255, 0.15);
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan);
+  font-weight: 600;
+}
+
+.btn-sync-auto:hover {
+  background: var(--accent-cyan);
+  color: #050b14;
+}
+
 /* Painel de Letras Sincronizadas */
 .lyrics-box {
   background: rgba(5, 7, 14, 0.9);
@@ -512,10 +612,15 @@ body {
   padding: 10px 16px;
   margin: 6px 0;
   color: var(--text-dim);
-  transition: all 0.3s ease;
+  transition: all 0.25s ease;
   border-radius: 8px;
-  cursor: default;
+  cursor: pointer;
   user-select: none;
+}
+
+.lyric-line:hover:not(.active) {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .lyric-line.active {

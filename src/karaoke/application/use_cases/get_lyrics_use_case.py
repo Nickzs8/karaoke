@@ -1,8 +1,10 @@
 """Caso de Uso: GetLyricsUseCase."""
 
+import json
 import re
+from pathlib import Path
 
-from karaoke.application.ports import AudioStoragePort
+from karaoke.application.ports import AudioStoragePort, VocalOnsetDetectorPort
 from karaoke.domain import (
     LyricsLine,
     LyricsNotFoundError,
@@ -13,21 +15,81 @@ from karaoke.domain import (
 class GetLyricsUseCase:
     """Recupera e processa letras sincronizadas (.lrc) salvas em disco local.
 
-    Valida a existência prévia da música, carrega o arquivo de letra correspondente
-    e realiza a estruturação temporal das linhas em instâncias de LyricsLine.
+    Valida a existência prévia da música, carrega o arquivo de letra correspondente,
+    realiza a estruturação temporal das linhas em instâncias de LyricsLine
+    e opcionalmente calcula a estimativa de offset temporal com base no áudio.
     """
 
     TIMESTAMP_PATTERN = re.compile(r"\[(\d{2,}):(\d{2}(?:\.\d{1,3})?)\]")
     DEFAULT_LINE_DURATION = 3.0
 
-    def __init__(self, storage: AudioStoragePort) -> None:
+    def __init__(
+        self,
+        storage: AudioStoragePort,
+        onset_detector: VocalOnsetDetectorPort | None = None,
+    ) -> None:
         self.storage = storage
+        self.onset_detector = onset_detector
 
     def execute(self, song_id: str) -> tuple[LyricsLine, ...]:
         """Recupera e estrutura a letra sincronizada para a música indicada."""
         self._ensure_song_exists(song_id)
         raw_lrc = self._read_lrc_file(song_id)
         return self._parse_lrc(raw_lrc)
+
+    def estimate_offset(self, song_id: str, first_lyric_start: float) -> float:
+        """Estima o offset entre a voz no áudio e o primeiro verso."""
+        if self.onset_detector is None:
+            return 0.0
+
+        metadata = self._read_song_metadata(song_id)
+        if not metadata:
+            return 0.0
+
+        vocals_path = self._resolve_vocals_path(metadata)
+        if vocals_path is None or not vocals_path.is_file():
+            return 0.0
+
+        detected_onset = self.onset_detector.detect_onset(vocals_path)
+        if detected_onset is None:
+            return 0.0
+
+        offset = round(detected_onset - first_lyric_start, 2)
+        return max(-10.0, min(offset, 60.0))
+
+    def _read_song_metadata(self, song_id: str) -> dict[str, object] | None:
+        """Lê o arquivo de metadados da música em storage/processed."""
+        metadata_filename = f"{song_id}.json"
+        if not self.storage.file_exists(metadata_filename, "processed"):
+            return None
+        metadata_path = self.storage.get_path(metadata_filename, "processed")
+        try:
+            return json.loads(metadata_path.read_text(encoding="utf-8"))
+        except Exception:
+            return None
+
+    def _resolve_vocals_path(self, metadata: dict[str, object]) -> Path | None:
+        """Resolve o caminho físico da faixa vocal no host ou storage."""
+        raw_path = metadata.get("vocals_path")
+        if not raw_path:
+            return None
+        candidate = Path(str(raw_path))
+        if candidate.is_file():
+            return candidate
+
+        parts = candidate.parts
+        if "processed" in parts:
+            idx = parts.index("processed")
+            rel_subpath = "/".join(parts[idx + 1 :])
+            storage_candidate = self.storage.get_path(rel_subpath, "processed")
+            if storage_candidate.is_file():
+                return storage_candidate
+
+        storage_fallback = self.storage.get_path(candidate.name, "processed")
+        if storage_fallback.is_file():
+            return storage_fallback
+
+        return None
 
     def _ensure_song_exists(self, song_id: str) -> None:
         """Verifica se a música foi devidamente registrada e processada no catálogo."""

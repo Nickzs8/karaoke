@@ -2,6 +2,7 @@
 
 from karaoke.domain.entities import Performance, Song, SongStatus
 from karaoke.domain.exceptions import (
+    AudioAnalysisError,
     AudioDownloadError,
     AudioSeparationError,
     DomainError,
@@ -25,6 +26,7 @@ from karaoke.domain.value_objects import (
 )
 
 __all__ = [
+    "AudioAnalysisError",
     "AudioDownloadError",
     "AudioSeparationError",
     "DomainError",
