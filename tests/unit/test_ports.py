@@ -77,6 +77,9 @@ class FakeAudioStorage:
     def clean_subfolder(self, subfolder: str) -> int:
         return 0
 
+    def list_files(self, subfolder: str) -> list[str]:
+        return ["file.wav"]
+
 
 def test_ports_structural_subtyping() -> None:
     """Verifica que as implementações de teste satisfazem os contratos das Portas."""

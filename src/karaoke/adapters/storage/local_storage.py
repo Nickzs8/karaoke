@@ -81,6 +81,20 @@ class LocalStorageAdapter(AudioStoragePort):
             return True
         return False
 
+    def list_files(self, subfolder: str) -> list[str]:
+        """Lista os nomes de arquivos existentes no subdiretório especificado."""
+        clean_subfolder = Path(subfolder).name
+        target_dir = (self.base_dir / clean_subfolder).resolve()
+
+        if not target_dir.is_dir() or not target_dir.is_relative_to(self.base_dir):
+            return []
+
+        return [
+            item.name
+            for item in sorted(target_dir.iterdir())
+            if item.is_file() and item.name != ".gitkeep"
+        ]
+
     def clean_subfolder(self, subfolder: str) -> int:
         """Remove todos os arquivos do subdiretório preservando arquivos .gitkeep."""
         clean_subfolder = Path(subfolder).name

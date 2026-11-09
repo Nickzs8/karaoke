@@ -28,6 +28,10 @@ class AudioStoragePort(Protocol):
         """Remove um arquivo do armazenamento caso ele exista."""
         ...
 
+    def list_files(self, subfolder: str) -> list[str]:
+        """Lista os nomes de arquivos existentes no subdiretório especificado."""
+        ...
+
     def clean_subfolder(self, subfolder: str) -> int:
         """Remove todos os arquivos de um subdiretório e retorna o total removido."""
         ...

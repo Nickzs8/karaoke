@@ -1,4 +1,3 @@
-
 """Adaptador de Avaliação de Desempenho Vocal: DtwPerformanceScorerAdapter."""
 
 from typing import Any
@@ -128,7 +127,6 @@ class DtwPerformanceScorerAdapter(PerformanceScorerPort):
         timestamps = np.array([p.timestamp for p in valid_points], dtype=np.float64)
         midi_notes = np.array([p.midi_note for p in valid_points], dtype=np.float64)
         return timestamps, midi_notes
-
 
     def _determine_octave_shift(
         self, ref_midi: np.ndarray, user_midi: np.ndarray

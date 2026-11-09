@@ -85,6 +85,15 @@ class TestLocalStorageAdapter:
         # O .gitkeep foi preservado
         assert gitkeep_path.is_file() is True
 
+    def test_list_files(self, storage: LocalStorageAdapter) -> None:
+        storage.save_file(b"1", "musica1.wav", "processed")
+        storage.save_file(b"2", "musica2.wav", "processed")
+        gitkeep = storage.get_path(".gitkeep", "processed")
+        gitkeep.write_text("")
+
+        files = storage.list_files("processed")
+        assert files == ["musica1.wav", "musica2.wav"]
+
     @pytest.mark.parametrize(
         "malicious_filename",
         [
