@@ -9,6 +9,10 @@ class SongNotFoundError(DomainError):
     """Lançada quando uma música não é encontrada no catálogo ou armazenamento."""
 
 
+class LyricsNotFoundError(DomainError):
+    """Lançada quando a letra de uma música não é encontrada no armazenamento."""
+
+
 class InvalidAudioFormatError(DomainError):
     """Lançada quando um formato de arquivo de áudio não é suportado ou é inválido."""
 

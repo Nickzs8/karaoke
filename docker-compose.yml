@@ -1,0 +1,30 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: karaoke_api
+    ports:
+      - "8000:8000"
+    volumes:
+      # Sincroniza o código-fonte em tempo real para desenvolvimento com hot reload
+      - ./src:/app/src
+      # Persiste todas as faixas e gravações de áudio no disco físico do host
+      - ./storage:/app/storage
+    env_file:
+      - .env
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app/src
+      - KARAOKE_STORAGE_DIR=/app/storage
+    command: ["uvicorn", "karaoke.presentation.api.app:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    restart: unless-stopped
+
+    # Caso possua GPU Nvidia e o nvidia-container-toolkit instalado, descomente as linhas abaixo:
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]

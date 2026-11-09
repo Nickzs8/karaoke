@@ -18,6 +18,7 @@ from karaoke.application.ports import (
 )
 from karaoke.application.use_cases import (
     EvaluatePerformanceUseCase,
+    GetLyricsUseCase,
     ListSongsUseCase,
     PrepareSongUseCase,
 )
@@ -26,6 +27,7 @@ from karaoke.domain import (
     InvalidAudioFormatError,
     InvalidStoragePathError,
     LyricsLine,
+    LyricsNotFoundError,
     PitchCurve,
     PitchPoint,
     Score,
@@ -467,3 +469,48 @@ class TestListSongsUseCase:
 
         items = use_case.execute()
         assert items == []
+
+
+class TestGetLyricsUseCase:
+    def test_get_lyrics_success(self, tmp_path: Path) -> None:
+        storage = FakeStorage(tmp_path)
+        # Salva metadados da música
+        storage.save_file(b'{"id": "song_123"}', "song_123.json", "processed")
+        # Salva arquivo .lrc
+        lrc_text = (
+            "[00:05.50]Primeira linha de teste\n"
+            "[00:10.00]Segunda linha de teste\n"
+            "[00:15.00]\n"
+        )
+        storage.save_file(lrc_text.encode("utf-8"), "song_123.lrc", "lyrics")
+
+        use_case = GetLyricsUseCase(storage=storage)
+        lines = use_case.execute("song_123")
+
+        assert len(lines) == 2
+        assert lines[0].text == "Primeira linha de teste"
+        assert lines[0].start_time == 5.5
+        assert lines[0].end_time == 10.0
+        assert lines[1].text == "Segunda linha de teste"
+        assert lines[1].start_time == 10.0
+        assert lines[1].end_time == 15.0
+
+    def test_get_lyrics_song_not_found(self, tmp_path: Path) -> None:
+        storage = FakeStorage(tmp_path)
+        use_case = GetLyricsUseCase(storage=storage)
+
+        with pytest.raises(SongNotFoundError, match="não encontrada no catálogo"):
+            use_case.execute("song_inexistente")
+
+    def test_get_lyrics_lyrics_file_not_found(self, tmp_path: Path) -> None:
+        storage = FakeStorage(tmp_path)
+        storage.save_file(
+            b'{"id": "song_sem_letra"}', "song_sem_letra.json", "processed"
+        )
+
+        use_case = GetLyricsUseCase(storage=storage)
+
+        with pytest.raises(
+            LyricsNotFoundError, match="Letra sincronizada não encontrada"
+        ):
+            use_case.execute("song_sem_letra")

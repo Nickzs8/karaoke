@@ -10,6 +10,7 @@ from karaoke.adapters.separators import DemucsSeparatorAdapter
 from karaoke.adapters.storage import LocalStorageAdapter
 from karaoke.application.use_cases import (
     EvaluatePerformanceUseCase,
+    GetLyricsUseCase,
     ListSongsUseCase,
     PrepareSongUseCase,
 )
@@ -58,6 +59,9 @@ class AppContainer:
         self.list_songs = ListSongsUseCase(
             storage=self.storage,
             base_audio_url=self.config.base_audio_url,
+        )
+        self.get_lyrics = GetLyricsUseCase(
+            storage=self.storage,
         )
 
 

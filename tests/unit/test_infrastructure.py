@@ -15,6 +15,7 @@ from karaoke.adapters.separators import DemucsSeparatorAdapter
 from karaoke.adapters.storage import LocalStorageAdapter
 from karaoke.application.use_cases import (
     EvaluatePerformanceUseCase,
+    GetLyricsUseCase,
     ListSongsUseCase,
     PrepareSongUseCase,
 )
@@ -158,6 +159,7 @@ class TestAppContainer:
         assert isinstance(container.prepare_song, PrepareSongUseCase)
         assert isinstance(container.evaluate_performance, EvaluatePerformanceUseCase)
         assert isinstance(container.list_songs, ListSongsUseCase)
+        assert isinstance(container.get_lyrics, GetLyricsUseCase)
 
     def test_container_singleton_and_factory(self) -> None:
         """Testa o comportamento das funções fábrica e singleton do container."""
