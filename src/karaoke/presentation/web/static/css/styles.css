@@ -351,6 +351,14 @@ body {
   cursor: pointer;
   transition: var(--transition);
   width: 100%;
+  text-decoration: none;
+}
+
+.btn:hover,
+.btn:focus,
+.btn:visited,
+.btn:active {
+  text-decoration: none;
 }
 
 .btn-primary {
@@ -1029,4 +1037,9 @@ body {
 .modal-footer-btns {
   display: flex;
   gap: 10px;
+}
+
+.modal-footer-btns a,
+#btnBackToCatalogModal {
+  text-decoration: none;
 }

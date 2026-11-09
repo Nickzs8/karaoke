@@ -43,6 +43,12 @@ class TestDtwPerformanceScorerAdapter:
         assert port is not None
         assert callable(getattr(scorer, "score_performance", None))
         assert DtwScorerAdapter is DtwPerformanceScorerAdapter
+        assert scorer.cents_tolerance == 100.0
+        assert scorer.max_cents_error == 400.0
+        assert scorer.timing_tolerance_seconds == 0.60
+        assert scorer.max_timing_deviation_seconds == 3.0
+        assert pytest.approx(scorer.pitch_weight, 0.01) == 0.7
+        assert pytest.approx(scorer.timing_weight, 0.01) == 0.3
 
     def test_identical_curves_produce_perfect_score(self) -> None:
         """Curvas idênticas devem receber 100 em afinação, ritmo e nota final."""

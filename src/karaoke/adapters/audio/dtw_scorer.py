@@ -20,10 +20,10 @@ class DtwPerformanceScorerAdapter(PerformanceScorerPort):
         self,
         pitch_weight: float = 0.7,
         timing_weight: float = 0.3,
-        cents_tolerance: float = 75.0,
-        max_cents_error: float = 300.0,
-        timing_tolerance_seconds: float = 0.50,
-        max_timing_deviation_seconds: float = 2.5,
+        cents_tolerance: float = 100.0,
+        max_cents_error: float = 400.0,
+        timing_tolerance_seconds: float = 0.60,
+        max_timing_deviation_seconds: float = 3.0,
         max_window_seconds: float = 3.0,
         allow_octave_transposition: bool = True,
         compensate_latency: bool = True,
@@ -34,9 +34,9 @@ class DtwPerformanceScorerAdapter(PerformanceScorerPort):
         Args:
             pitch_weight: Peso da afinação na nota consolidada final.
             timing_weight: Peso do ritmo na nota consolidada final.
-            cents_tolerance: Tolerância em cents para nota máxima (75 cents).
-            max_cents_error: Erro em cents acima do qual a afinação zera.
-            timing_tolerance_seconds: Tolerância temporal em segundos (500ms).
+            cents_tolerance: Tolerância em cents para nota máxima (100 cents).
+            max_cents_error: Erro em cents acima do qual a afinação zera (400 cents).
+            timing_tolerance_seconds: Tolerância temporal em segundos (600ms).
             max_timing_deviation_seconds: Desvio temporal acima do qual o ritmo zera.
             max_window_seconds: Raio da janela temporal Sakoe-Chiba em segundos.
             allow_octave_transposition: Se deve tolerar diferenças de oitava.

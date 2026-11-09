@@ -73,7 +73,7 @@ class TestAppConfig:
         assert config.lrclib_url == "https://lrclib.net/api"
         assert config.pitch_weight == 0.7
         assert config.timing_weight == 0.3
-        assert config.cents_tolerance == 75.0
+        assert config.cents_tolerance == 100.0
 
         # Subpastas de armazenamento
         assert config.raw_storage_dir == config.storage_dir / "raw"

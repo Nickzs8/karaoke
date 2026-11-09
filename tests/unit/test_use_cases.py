@@ -6,6 +6,7 @@ from typing import BinaryIO
 
 import pytest
 
+from karaoke.adapters.audio import DtwPerformanceScorerAdapter
 from karaoke.application.ports import (
     AudioDownloaderPort,
     AudioSeparatorPort,
@@ -141,7 +142,18 @@ class FakeLyricsProvider(LyricsProviderPort):
 
 
 class FakePitchExtractor(PitchExtractorPort):
+    def __init__(self, mapping: dict[Path, PitchCurve] | None = None) -> None:
+        self.mapping = {
+            Path(p).resolve(): curve for p, curve in (mapping or {}).items()
+        }
+
+    def register_curve(self, path: Path, curve: PitchCurve) -> None:
+        self.mapping[Path(path).resolve()] = curve
+
     def extract_pitch(self, audio_path: Path) -> PitchCurve:
+        resolved = Path(audio_path).resolve()
+        if resolved in self.mapping:
+            return self.mapping[resolved]
         return PitchCurve(
             points=(
                 PitchPoint(timestamp=0.1, frequency_hz=440.0, midi_note=69.0),
@@ -403,6 +415,130 @@ class TestEvaluatePerformanceUseCase:
         with pytest.raises(InvalidStoragePathError):
             use_case.execute(song_id="song-1", recording_path=missing_rec)
 
+    def test_evaluate_performance_compares_user_recording_with_song_returns_score(
+        self, setup_evaluate
+    ) -> None:
+        """Compara a gravação do usuário com a música e retorna pontuação exata."""
+        storage: FakeStorage = setup_evaluate["storage"]
+        ready_song: Song = setup_evaluate["ready_song"]
+        tmp_path: Path = setup_evaluate["tmp_path"]
+
+        # Melodia de referência da música (5 notas na escala C4..G4)
+        ref_points = (
+            PitchPoint(timestamp=0.0, frequency_hz=261.63, midi_note=60.0),
+            PitchPoint(timestamp=0.5, frequency_hz=293.66, midi_note=62.0),
+            PitchPoint(timestamp=1.0, frequency_hz=329.63, midi_note=64.0),
+            PitchPoint(timestamp=1.5, frequency_hz=349.23, midi_note=65.0),
+            PitchPoint(timestamp=2.0, frequency_hz=392.00, midi_note=67.0),
+        )
+        ref_curve = PitchCurve(points=ref_points)
+
+        # Gravação real simulada do usuário:
+        # - Latência de buffer de 150ms
+        # - Desvio de afinação de 150 cents (+1.5 semitons) apenas na 3ª nota
+        user_recording_file = tmp_path / "recordings" / "user_performance.wav"
+        user_recording_file.parent.mkdir(parents=True, exist_ok=True)
+        user_recording_file.write_bytes(b"user_audio_stream")
+
+        user_points = (
+            PitchPoint(timestamp=0.15, frequency_hz=261.63, midi_note=60.0),
+            PitchPoint(timestamp=0.65, frequency_hz=293.66, midi_note=62.0),
+            PitchPoint(timestamp=1.15, frequency_hz=359.80, midi_note=65.5),
+            PitchPoint(timestamp=1.65, frequency_hz=349.23, midi_note=65.0),
+            PitchPoint(timestamp=2.15, frequency_hz=392.00, midi_note=67.0),
+        )
+        user_curve = PitchCurve(points=user_points)
+
+        assert ready_song.vocals_path is not None
+        extractor = FakePitchExtractor(
+            mapping={
+                ready_song.vocals_path: ref_curve,
+                user_recording_file: user_curve,
+            }
+        )
+        scorer = DtwPerformanceScorerAdapter(pitch_weight=0.7, timing_weight=0.3)
+
+        use_case = EvaluatePerformanceUseCase(
+            storage=storage,
+            pitch_extractor=extractor,
+            scorer=scorer,
+        )
+
+        result = use_case.execute(
+            song_id=ready_song.id,
+            recording_path=user_recording_file,
+        )
+
+        # 4 notas perfeitas (100.0) e 1 nota com 150 cents de erro (83.33) -> 96.67
+        assert result.pitch_score.value == 96.67
+        # Latência de 150ms compensada dentro da tolerância rítmica de 600ms -> 100.0
+        assert result.timing_score.value == 100.0
+        # Pontuação total ponderada: 96.67 * 0.7 + 100.0 * 0.3 = 97.67
+        assert result.total_score.value == 97.67
+        # Detalhes e métricas consolidadas
+        assert result.details["coverage_ratio"] == 100.0
+        assert result.details["mean_pitch_error_cents"] == 30.0
+        assert result.details["max_pitch_error_cents"] == 150.0
+        assert result.details["global_latency_seconds"] == 0.15
+        assert result.details["reference_points_count"] == 5
+        assert result.details["user_points_count"] == 5
+
+    def test_evaluate_performance_partial_recording_scales_coverage_score(
+        self, setup_evaluate
+    ) -> None:
+        """Garante que gravação parcial escala nota proporcional à cobertura."""
+        storage: FakeStorage = setup_evaluate["storage"]
+        ready_song: Song = setup_evaluate["ready_song"]
+        tmp_path: Path = setup_evaluate["tmp_path"]
+
+        # Música de referência com 5 notas espaçadas
+        ref_points = (
+            PitchPoint(timestamp=0.0, frequency_hz=261.63, midi_note=60.0),
+            PitchPoint(timestamp=0.5, frequency_hz=293.66, midi_note=62.0),
+            PitchPoint(timestamp=10.0, frequency_hz=329.63, midi_note=64.0),
+            PitchPoint(timestamp=10.5, frequency_hz=349.23, midi_note=65.0),
+            PitchPoint(timestamp=11.0, frequency_hz=392.00, midi_note=67.0),
+        )
+        ref_curve = PitchCurve(points=ref_points)
+
+        # Gravação de usuário com apenas os primeiros 2 trechos (40% de cobertura)
+        short_rec_file = tmp_path / "recordings" / "user_short.wav"
+        short_rec_file.parent.mkdir(parents=True, exist_ok=True)
+        short_rec_file.write_bytes(b"short_audio")
+
+        user_curve = PitchCurve(
+            points=(
+                PitchPoint(timestamp=0.0, frequency_hz=261.63, midi_note=60.0),
+                PitchPoint(timestamp=0.5, frequency_hz=293.66, midi_note=62.0),
+            )
+        )
+
+        assert ready_song.vocals_path is not None
+        extractor = FakePitchExtractor(
+            mapping={
+                ready_song.vocals_path: ref_curve,
+                short_rec_file: user_curve,
+            }
+        )
+        scorer = DtwPerformanceScorerAdapter(pitch_weight=0.7, timing_weight=0.3)
+
+        use_case = EvaluatePerformanceUseCase(
+            storage=storage,
+            pitch_extractor=extractor,
+            scorer=scorer,
+        )
+
+        result = use_case.execute(
+            song_id=ready_song.id,
+            recording_path=short_rec_file,
+        )
+
+        assert result.pitch_score.value == 100.0
+        assert result.timing_score.value == 100.0
+        assert result.details["coverage_ratio"] == 40.0
+        # 100.0 total bruto * 0.40 cobertura = 40.0
+        assert result.total_score.value == 40.0
+
 
 # ==============================================================================
 # Testes do ListSongsUseCase
@@ -535,3 +671,92 @@ class TestGetLyricsUseCase:
         use_case = GetLyricsUseCase(storage=storage, onset_detector=MockOnsetDetector())
         offset = use_case.estimate_offset("song_123", first_lyric_start=0.5)
         assert offset == 4.9
+
+    def test_get_lyrics_on_demand_fetches_and_caches(self, tmp_path: Path) -> None:
+        storage = FakeStorage(tmp_path)
+        meta = '{"id": "song_queen", "title": "All Dead, All Dead", "artist": "Queen"}'
+        storage.save_file(meta.encode("utf-8"), "song_queen.json", "processed")
+
+        class MockLyricsProvider:
+            def __init__(self) -> None:
+                self.calls = 0
+
+            def get_lyrics(
+                self, title: str, artist: str | None = None
+            ) -> tuple[LyricsLine, ...]:
+                self.calls += 1
+                return (
+                    LyricsLine(start_time=2.0, end_time=6.0, text="All dead, all dead"),
+                )
+
+        provider = MockLyricsProvider()
+        use_case = GetLyricsUseCase(storage=storage, lyrics_provider=provider)
+
+        # 1. Primeira chamada: busca no provider e persiste no cache
+        assert not storage.file_exists("song_queen.lrc", "lyrics")
+        lines = use_case.execute("song_queen")
+        assert len(lines) == 1
+        assert lines[0].text == "All dead, all dead"
+        assert provider.calls == 1
+        assert storage.file_exists("song_queen.lrc", "lyrics")
+
+        # 2. Segunda chamada: lê diretamente do arquivo sem invocar o provider
+        cached_lines = use_case.execute("song_queen")
+        assert len(cached_lines) == 1
+        assert cached_lines[0].text == "All dead, all dead"
+        assert provider.calls == 1
+
+    def test_get_lyrics_on_demand_with_noisy_youtube_metadata_persists_lrc(
+        self, tmp_path: Path
+    ) -> None:
+        storage = FakeStorage(tmp_path)
+        meta = (
+            '{"id": "song_queen_noisy", '
+            '"title": "Queen - All Dead, All Dead - At Last, the Video!", '
+            '"artist": "Queen Official"}'
+        )
+        storage.save_file(meta.encode("utf-8"), "song_queen_noisy.json", "processed")
+
+        captured_args: dict[str, str | None] = {}
+
+        class MockLyricsProvider:
+            def get_lyrics(
+                self, title: str, artist: str | None = None
+            ) -> tuple[LyricsLine, ...]:
+                captured_args["title"] = title
+                captured_args["artist"] = artist
+                return (
+                    LyricsLine(
+                        start_time=18.48,
+                        end_time=22.06,
+                        text="She came without a farthing",
+                    ),
+                    LyricsLine(
+                        start_time=22.06,
+                        end_time=24.89,
+                        text="A babe without a name",
+                    ),
+                )
+
+        provider = MockLyricsProvider()
+        use_case = GetLyricsUseCase(storage=storage, lyrics_provider=provider)
+
+        assert not storage.file_exists("song_queen_noisy.lrc", "lyrics")
+        lines = use_case.execute("song_queen_noisy")
+
+        # Verifica se passou os metadados brutos para o provider sanitizar
+        expected_title = "Queen - All Dead, All Dead - At Last, the Video!"
+        assert captured_args["title"] == expected_title
+        assert captured_args["artist"] == "Queen Official"
+
+        # Verifica retorno do caso de uso
+        assert len(lines) == 2
+        assert lines[0].text == "She came without a farthing"
+        assert lines[0].start_time == 18.48
+
+        # Verifica arquivo salvo em disco
+        assert storage.file_exists("song_queen_noisy.lrc", "lyrics")
+        saved_lrc_path = storage.get_path("song_queen_noisy.lrc", "lyrics")
+        saved_text = saved_lrc_path.read_text(encoding="utf-8")
+        assert "[00:18.48]She came without a farthing" in saved_text
+        assert "[00:22.06]A babe without a name" in saved_text
