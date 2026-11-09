@@ -8,6 +8,7 @@ from karaoke.domain.exceptions import (
     InvalidAudioFormatError,
     InvalidLyricsTimeError,
     InvalidScoreError,
+    PitchExtractionError,
     SongNotFoundError,
     SongNotReadyError,
 )
@@ -29,6 +30,7 @@ __all__ = [
     "LyricsLine",
     "Performance",
     "PitchCurve",
+    "PitchExtractionError",
     "PitchPoint",
     "Score",
     "ScoreResult",
