@@ -1,6 +1,7 @@
 """Adaptador de Extração de Pitch F0: LibrosaPitchExtractorAdapter."""
 
 import math
+import subprocess
 from pathlib import Path
 
 import librosa
@@ -68,9 +69,41 @@ class LibrosaPitchExtractorAdapter(PitchExtractorPort):
             y, sr = librosa.load(str(audio_path), sr=self.sample_rate, mono=True)
             return y, sr
         except Exception as exc:
+            # Fallback robusto via ffmpeg para containers modernos (WebM, Opus, AAC)
+            decoded = self._decode_via_ffmpeg(audio_path)
+            if decoded is not None:
+                return decoded, self.sample_rate
+
             raise PitchExtractionError(
                 f"Falha ao carregar arquivo de áudio '{audio_path.name}': {exc}"
             ) from exc
+
+    def _decode_via_ffmpeg(self, audio_path: Path) -> np.ndarray | None:
+        """Decodifica qualquer container de áudio (WebM, Opus, Ogg, AAC) via ffmpeg."""
+        cmd = [
+            "ffmpeg",
+            "-nostdin",
+            "-threads",
+            "1",
+            "-i",
+            str(audio_path),
+            "-f",
+            "s16le",
+            "-ac",
+            "1",
+            "-ar",
+            str(self.sample_rate),
+            "-",
+        ]
+        try:
+            result = subprocess.run(cmd, capture_output=True, check=False)
+            if result.returncode == 0 and result.stdout:
+                int16_data = np.frombuffer(result.stdout, dtype=np.int16)
+                if len(int16_data) > 0:
+                    return int16_data.astype(np.float32) / 32768.0
+        except Exception:
+            return None
+        return None
 
     def _compute_pyin(
         self, audio_mono: np.ndarray, sr: int

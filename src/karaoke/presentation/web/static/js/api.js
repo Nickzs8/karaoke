@@ -94,7 +94,17 @@ export const api = {
   async evaluatePerformance(songId, audioBlob) {
     const formData = new FormData();
     formData.append("song_id", songId);
-    formData.append("audio_file", audioBlob, `recording_${Date.now()}.wav`);
+
+    const mime = (audioBlob && audioBlob.type) ? audioBlob.type.toLowerCase() : "";
+    const ext = mime.includes("webm")
+      ? "webm"
+      : mime.includes("ogg")
+      ? "ogg"
+      : mime.includes("mp4") || mime.includes("m4a")
+      ? "m4a"
+      : "wav";
+
+    formData.append("audio_file", audioBlob, `recording_${Date.now()}.${ext}`);
 
     const response = await fetch(`${API_BASE}/performances/evaluate`, {
       method: "POST",
