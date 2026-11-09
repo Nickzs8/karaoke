@@ -70,18 +70,101 @@ class LrclibAdapter(LyricsProviderPort):
 
     def _fetch_synced_lrc(self, title: str, artist: str | None) -> str | None:
         """Tenta obter a letra sincronizada via busca exata ou busca textual."""
+        clean_title, clean_artist = self._sanitize_metadata(title, artist)
+
         try:
             with self._create_or_reuse_client() as client:
-                if artist:
+                # 1. Correspondência exata com metadados limpos
+                if clean_artist:
+                    exact_lrc = self._request_exact_match(
+                        client, clean_title, clean_artist
+                    )
+                    if exact_lrc:
+                        return exact_lrc
+
+                # 2. Correspondência exata com metadados originais (se diferirem)
+                if artist and (clean_title != title or clean_artist != artist):
                     exact_lrc = self._request_exact_match(client, title, artist)
                     if exact_lrc:
                         return exact_lrc
 
-                search_query = f"{artist} {title}" if artist else title
-                return self._request_search(client, search_query)
+                # 3. Busca textual com múltiplas variantes de consulta
+                for query in self._build_search_candidates(
+                    clean_title, clean_artist, title, artist
+                ):
+                    search_lrc = self._request_search(client, query)
+                    if search_lrc:
+                        return search_lrc
+
+                return None
         except (httpx.HTTPError, Exception):
             # Fallback gracioso: qualquer falha de rede/parsing retorna None
             return None
+
+    def _sanitize_metadata(
+        self, title: str, artist: str | None
+    ) -> tuple[str, str | None]:
+        """Limpa ruídos e sufixos típicos de títulos e canais do YouTube."""
+        clean_artist = artist.strip() if artist else None
+        if clean_artist:
+            clean_artist = re.sub(
+                r"(?i)\s*(?:official|topic|vevo|records|music|channel)\s*$",
+                "",
+                clean_artist,
+            ).strip(" -–—|")
+            if not clean_artist:
+                clean_artist = None
+
+        clean_title = title.strip()
+        # Remove parênteses e colchetes comuns com termos de vídeo
+        video_tags_pattern = (
+            r"(?i)[\(\[\{](?:official|top of the pops|\d{4}|video|lyric"
+            r"|audio|remaster|hd|4k|at last|live|clip|visualizer).*?[\)\]\}]"
+        )
+        clean_title = re.sub(video_tags_pattern, "", clean_title)
+
+        # Remove sufixos como '- At Last, the Video!' ou '- Official Audio'
+        suffix_pattern = (
+            r"(?i)\s*-\s*(?:at last|official|video|lyric|audio|hd"
+            r"|live|remaster|visualizer).*$"
+        )
+        clean_title = re.sub(suffix_pattern, "", clean_title)
+
+        # Detecta padrão 'Artista - Título' no título do vídeo
+        if " - " in clean_title:
+            parts = clean_title.split(" - ", 1)
+            cand_artist = parts[0].strip()
+            cand_title = parts[1].strip()
+            if clean_artist and cand_artist.lower() in clean_artist.lower():
+                clean_title = cand_title
+            elif not clean_artist:
+                clean_artist = cand_artist
+                clean_title = cand_title
+
+        clean_title = clean_title.strip(" -–—|")
+        if not clean_title:
+            clean_title = title.strip()
+
+        return clean_title, clean_artist
+
+    def _build_search_candidates(
+        self,
+        clean_title: str,
+        clean_artist: str | None,
+        raw_title: str,
+        raw_artist: str | None,
+    ) -> list[str]:
+        """Gera lista de consultas de busca textual ordenadas por especificidade."""
+        queries: list[str] = []
+        if clean_artist and clean_title:
+            queries.append(f"{clean_artist} {clean_title}")
+        if clean_title and clean_title not in queries:
+            queries.append(clean_title)
+        if raw_artist and raw_title:
+            raw_combined = f"{raw_artist} {raw_title}"
+            if raw_combined not in queries:
+                queries.append(raw_combined)
+        return queries
 
     def _create_or_reuse_client(self) -> Any:
         """Retorna o cliente HTTP customizado ou um novo contexto de cliente."""

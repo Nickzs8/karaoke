@@ -65,6 +65,7 @@ class AppContainer:
         self.get_lyrics = GetLyricsUseCase(
             storage=self.storage,
             onset_detector=self.onset_detector,
+            lyrics_provider=self.lyrics_provider,
         )
 
 

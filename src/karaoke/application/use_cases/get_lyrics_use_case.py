@@ -4,7 +4,11 @@ import json
 import re
 from pathlib import Path
 
-from karaoke.application.ports import AudioStoragePort, VocalOnsetDetectorPort
+from karaoke.application.ports import (
+    AudioStoragePort,
+    LyricsProviderPort,
+    VocalOnsetDetectorPort,
+)
 from karaoke.domain import (
     LyricsLine,
     LyricsNotFoundError,
@@ -18,6 +22,7 @@ class GetLyricsUseCase:
     Valida a existência prévia da música, carrega o arquivo de letra correspondente,
     realiza a estruturação temporal das linhas em instâncias de LyricsLine
     e opcionalmente calcula a estimativa de offset temporal com base no áudio.
+    Permite busca sob demanda via LyricsProviderPort se o arquivo .lrc não existir.
     """
 
     TIMESTAMP_PATTERN = re.compile(r"\[(\d{2,}):(\d{2}(?:\.\d{1,3})?)\]")
@@ -27,15 +32,27 @@ class GetLyricsUseCase:
         self,
         storage: AudioStoragePort,
         onset_detector: VocalOnsetDetectorPort | None = None,
+        lyrics_provider: LyricsProviderPort | None = None,
     ) -> None:
         self.storage = storage
         self.onset_detector = onset_detector
+        self.lyrics_provider = lyrics_provider
 
     def execute(self, song_id: str) -> tuple[LyricsLine, ...]:
         """Recupera e estrutura a letra sincronizada para a música indicada."""
         self._ensure_song_exists(song_id)
         raw_lrc = self._read_lrc_file(song_id)
-        return self._parse_lrc(raw_lrc)
+        if raw_lrc is not None:
+            return self._parse_lrc(raw_lrc)
+
+        if self.lyrics_provider is not None:
+            cached_lines = self._fetch_and_cache_lyrics(song_id)
+            if cached_lines:
+                return cached_lines
+
+        raise LyricsNotFoundError(
+            f"Letra sincronizada não encontrada para a música '{song_id}'."
+        )
 
     def estimate_offset(self, song_id: str, first_lyric_start: float) -> float:
         """Estima o offset entre a voz no áudio e o primeiro verso."""
@@ -99,15 +116,53 @@ class GetLyricsUseCase:
                 f"Música com identificador '{song_id}' não encontrada no catálogo."
             )
 
-    def _read_lrc_file(self, song_id: str) -> str:
-        """Lê o arquivo de texto LRC salvo na subpasta de letras."""
+    def _read_lrc_file(self, song_id: str) -> str | None:
+        """Lê o arquivo de texto LRC salvo na subpasta de letras se existir."""
         lyrics_filename = f"{song_id}.lrc"
         if not self.storage.file_exists(lyrics_filename, "lyrics"):
-            raise LyricsNotFoundError(
-                f"Letra sincronizada não encontrada para a música '{song_id}'."
-            )
+            return None
         lyrics_path = self.storage.get_path(lyrics_filename, "lyrics")
         return lyrics_path.read_text(encoding="utf-8")
+
+    def _fetch_and_cache_lyrics(self, song_id: str) -> tuple[LyricsLine, ...]:
+        """Tenta buscar a letra sob demanda pelo provedor e salva o arquivo .lrc."""
+        if self.lyrics_provider is None:
+            return ()
+
+        metadata = self._read_song_metadata(song_id)
+        if not metadata:
+            return ()
+
+        title = str(metadata.get("title", "")).strip()
+        raw_artist = metadata.get("artist")
+        artist = str(raw_artist).strip() if raw_artist else None
+        if not title:
+            return ()
+
+        try:
+            lines = self.lyrics_provider.get_lyrics(title=title, artist=artist)
+            if lines:
+                lrc_content = self._format_lrc_content(lines)
+                self.storage.save_file(
+                    file_data=lrc_content.encode("utf-8"),
+                    filename=f"{song_id}.lrc",
+                    subfolder="lyrics",
+                )
+                return lines
+        except Exception:
+            return ()
+
+        return ()
+
+    def _format_lrc_content(self, lines: tuple[LyricsLine, ...]) -> str:
+        """Converte uma sequência de LyricsLine para o formato padrão LRC."""
+        lrc_rows: list[str] = []
+        for line in lines:
+            minutes = int(line.start_time // 60)
+            seconds = line.start_time % 60
+            timestamp_str = f"[{minutes:02d}:{seconds:05.2f}]"
+            lrc_rows.append(f"{timestamp_str}{line.text}")
+        return "\n".join(lrc_rows)
 
     def _parse_lrc(self, lrc_content: str) -> tuple[LyricsLine, ...]:
         """Converte o conteúdo textual em formato LRC em uma tupla de LyricsLine."""

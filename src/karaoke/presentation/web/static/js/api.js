@@ -20,6 +20,29 @@ export const api = {
   },
 
   /**
+   * Recupera os dados de uma música específica pelo ID.
+   * @param {string} songId
+   * @returns {Promise<Object>}
+   */
+  async getSong(songId) {
+    try {
+      const response = await fetch(`${API_BASE}/songs/${encodeURIComponent(songId)}`);
+      if (response.ok) {
+        return await response.json();
+      }
+    } catch {
+      // Fallback para getSongs caso a rota direta falhe
+    }
+
+    const songs = await this.getSongs(false);
+    const found = songs.find((s) => s.id === songId);
+    if (!found) {
+      throw new Error("Música não encontrada no catálogo.");
+    }
+    return found;
+  },
+
+  /**
    * Dispara o preparo de música a partir de URL do YouTube ou termo de busca.
    * @param {string} queryOrUrl
    * @param {string|null} title

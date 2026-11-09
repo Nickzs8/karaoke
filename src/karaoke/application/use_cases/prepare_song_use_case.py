@@ -162,9 +162,8 @@ class PrepareSongUseCase:
         lrc_rows: list[str] = []
         for line in lines:
             minutes = int(line.start_time // 60)
-            seconds = int(line.start_time % 60)
-            hundredths = int((line.start_time - int(line.start_time)) * 100)
-            timestamp_str = f"[{minutes:02d}:{seconds:02d}.{hundredths:02d}]"
+            seconds = line.start_time % 60
+            timestamp_str = f"[{minutes:02d}:{seconds:05.2f}]"
             lrc_rows.append(f"{timestamp_str}{line.text}")
         return "\n".join(lrc_rows)
 

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Karaokê</title>
+  <title>Karaokê - Catálogo & Preparação</title>
   <link rel="stylesheet" href="/static/web/css/styles.css">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%233b82f6%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z%22/><path d=%22M19 10v2a7 7 0 0 1-14 0v-2%22/><line x1=%2212%22 x2=%2212%22 y1=%2219%22 y2=%2222%22/></svg>">
 </head>
@@ -21,7 +21,6 @@
         </div>
         <div>
           <h1 class="logo-title">Karaokê</h1>
-          <span class="logo-tag">Processamento de Áudio</span>
         </div>
       </div>
       <div class="mic-badge" id="micBadge">
@@ -31,7 +30,7 @@
     </header>
 
     <!-- Grade Principal: Preparo e Catálogo -->
-    <div class="main-grid">
+    <main class="main-grid">
       <!-- Painel de Preparação de Músicas -->
       <section class="card">
         <h2 class="card-title">Preparar Música</h2>
@@ -67,7 +66,7 @@
           <form id="fileForm">
             <div class="form-group">
               <div class="dropzone" id="dropzone">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="dropzone-icon">
+                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="dropzone-icon">
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                   <polyline points="17 8 12 3 7 8"></polyline>
                   <line x1="12" y1="3" x2="12" y2="15"></line>
@@ -110,130 +109,9 @@
           <div class="empty-state">Carregando catálogo...</div>
         </div>
       </section>
-    </div>
-
-    <!-- Palco do Karaokê (Player, Letras e Gravação) -->
-    <div class="stage-container" id="stageContainer" style="margin-top: 32px;">
-      <div class="stage-header">
-        <div>
-          <div class="current-song-title" id="currentSongTitle">Título da Música</div>
-          <div class="current-song-artist" id="currentSongArtist">Artista</div>
-        </div>
-        <button class="btn btn-secondary" id="btnChangeSong" style="width: auto; padding: 8px 16px;">
-          Trocar Música
-        </button>
-      </div>
-
-      <!-- Barra de Controle de Sincronia da Letra -->
-      <div class="sync-bar" id="syncBar">
-        <div class="sync-info">
-          <span class="sync-title">Sincronia da Letra</span>
-          <span class="sync-subtitle">Compense introduções ou silêncio inicial</span>
-        </div>
-        <div class="sync-controls">
-          <button type="button" class="btn-sync-step" id="btnSyncMinusLarge" title="Adiantar 1 segundo (-1.0s)">-1.0s</button>
-          <button type="button" class="btn-sync-step" id="btnSyncMinusSmall" title="Adiantar 0.2 segundos (-0.2s)">-0.2s</button>
-          <div class="sync-display-pill" id="syncValueDisplay" title="Offset atual da letra">+0.0s</div>
-          <button type="button" class="btn-sync-step" id="btnSyncPlusSmall" title="Atrasar 0.2 segundos (+0.2s)">+0.2s</button>
-          <button type="button" class="btn-sync-step" id="btnSyncPlusLarge" title="Atrasar 1 segundo (+1.0s)">+1.0s</button>
-          <button type="button" class="btn-sync-reset" id="btnSyncReset" title="Zerar ajuste de sincronia">Zerar</button>
-          <button type="button" class="btn-sync-auto" id="btnSyncAuto" style="display: none;" title="Aplicar offset detectado automaticamente">Auto</button>
-        </div>
-      </div>
-
-      <!-- Caixa de Letras Sincronizadas -->
-      <div class="lyrics-box" id="lyricsBox">
-        <div class="empty-state">Selecione uma música no catálogo acima para começar.</div>
-      </div>
-
-      <!-- Controles do Player e Gravação -->
-      <div class="player-controls">
-        <div class="timeline-row">
-          <span class="time-label" id="currentTimeLabel">00:00</span>
-          <div class="progress-bar-container" id="progressBarContainer">
-            <div class="progress-bar-fill" id="progressBarFill"></div>
-          </div>
-          <span class="time-label" id="totalTimeLabel">00:00</span>
-        </div>
-
-        <div class="action-row">
-          <div class="main-playback-btns">
-            <button class="btn-circle" id="btnPlayPause" title="Reproduzir / Pausar">
-              <span id="playIcon">▶</span>
-            </button>
-          </div>
-
-          <div style="display: flex; gap: 12px; align-items: center;">
-            <button class="mic-rec-btn" id="btnRecordMic">
-              <span class="rec-dot"></span>
-              <span id="recBtnLabel">Gravar Voz</span>
-            </button>
-            <button class="btn btn-primary" id="btnFinishSinging" style="width: auto;">
-              Finalizar e Avaliar
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+    </main>
   </div>
 
-  <!-- Modal de Pontuação da Performance -->
-  <div class="modal-overlay" id="modalOverlay">
-    <div class="score-modal">
-      <div class="modal-header-tag">Resultado da Avaliação</div>
-      <h2>Pontuação da Performance</h2>
-
-      <div class="score-circle-wrapper">
-        <div class="score-number" id="scoreNumber">--</div>
-      </div>
-
-      <div class="score-rating" id="scoreRating">Avaliando...</div>
-
-      <div class="metrics-grid">
-        <div class="metric-card">
-          <div class="metric-label">Afinação Melódica</div>
-          <div class="metric-value" id="pitchScoreValue">--%</div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-label">Precisão Rítmica</div>
-          <div class="metric-value" id="timingScoreValue">--%</div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-label">Cobertura Vocal</div>
-          <div class="metric-value" id="coverageValue">--%</div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-label">Latência Detectada</div>
-          <div class="metric-value" id="latencyValue" style="font-size: 1.1rem;">--</div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-label">Desvio em Cents</div>
-          <div class="metric-value" id="centsErrorValue" style="font-size: 1.1rem;">--</div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-label">Desvio Temporal</div>
-          <div class="metric-value" id="timingDevValue" style="font-size: 1.1rem;">--</div>
-        </div>
-      </div>
-
-      <div class="pitch-canvas-wrapper">
-        <div style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 6px; text-align: left;">
-          Comparação Melódica: <span style="color: #3b82f6; font-weight: 600;">— Referência</span> vs <span style="color: #8b5cf6; font-weight: 600;">— Sua Voz</span>
-        </div>
-        <canvas id="pitchChartCanvas"></canvas>
-      </div>
-
-      <div class="modal-footer-btns">
-        <button class="btn btn-secondary" id="btnRetryModal">
-          Tentar Novamente
-        </button>
-        <button class="btn btn-primary" id="btnCloseModal">
-          Concluir
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <script type="module" src="/static/web/js/app.js"></script>
+  <script type="module" src="/static/web/js/catalog.js?v=1.0.1"></script>
 </body>
 </html>

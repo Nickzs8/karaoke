@@ -106,6 +106,24 @@ export class VoiceRecorder {
   }
 
   /**
+   * Pausa a captura de áudio se estiver gravando.
+   */
+  pause() {
+    if (this.mediaRecorder && this.mediaRecorder.state === "recording") {
+      this.mediaRecorder.pause();
+    }
+  }
+
+  /**
+   * Retoma a captura de áudio se estiver pausada.
+   */
+  resume() {
+    if (this.mediaRecorder && this.mediaRecorder.state === "paused") {
+      this.mediaRecorder.resume();
+    }
+  }
+
+  /**
    * Finaliza a gravação e retorna o Blob consolidado de áudio gravado.
    * @returns {Promise<Blob>}
    */

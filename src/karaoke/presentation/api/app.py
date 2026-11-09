@@ -107,6 +107,10 @@ def _setup_frontend(app: FastAPI) -> None:
         async def serve_index(request: Request) -> Response:
             return templates.TemplateResponse(request=request, name="index.html")
 
+        @app.get("/sing", include_in_schema=False)
+        async def serve_sing(request: Request) -> Response:
+            return templates.TemplateResponse(request=request, name="sing.html")
+
 
 def _setup_exception_handlers(app: FastAPI) -> None:
     """Mapeia exceções de domínio para respostas HTTP padronizadas."""

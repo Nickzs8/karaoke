@@ -68,6 +68,10 @@ body {
   padding: 24px 20px;
 }
 
+.container-stage {
+  max-width: 980px;
+}
+
 /* ==========================================================================
    Header & Barra de Status
    ========================================================================== */
@@ -78,6 +82,40 @@ body {
   margin-bottom: 28px;
   padding-bottom: 18px;
   border-bottom: 1px solid var(--border-subtle);
+}
+
+.header-stage {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.header-nav-left {
+  display: flex;
+  align-items: center;
+}
+
+.btn-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-sm);
+  color: var(--text-main);
+  font-size: 0.82rem;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.btn-back:hover {
+  background: var(--bg-hover);
+  border-color: #384761;
+  color: #ffffff;
 }
 
 .logo-group {
@@ -99,6 +137,11 @@ body {
   flex-shrink: 0;
 }
 
+.logo-icon-sm {
+  width: 30px;
+  height: 30px;
+}
+
 .logo-title {
   font-size: 1.35rem;
   font-weight: 700;
@@ -106,18 +149,8 @@ body {
   letter-spacing: -0.02em;
 }
 
-.logo-tag {
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  background: var(--bg-tertiary);
-  color: var(--text-muted);
-  padding: 2px 8px;
-  border-radius: var(--radius-sm);
-  font-weight: 500;
-  border: 1px solid var(--border-medium);
-  letter-spacing: 0.5px;
-  display: inline-block;
-  margin-top: 2px;
+.logo-title-sm {
+  font-size: 1.15rem;
 }
 
 .mic-badge {
@@ -491,14 +524,11 @@ body {
 /* ==========================================================================
    Palco do Karaokê (Player, Letras e Microfone)
    ========================================================================== */
-.stage-container {
-  display: none;
+.stage-container,
+.stage-page-container {
+  display: flex;
   flex-direction: column;
   gap: 18px;
-}
-
-.stage-container.active {
-  display: flex;
 }
 
 .stage-header {
@@ -507,10 +537,12 @@ body {
   align-items: center;
   padding-bottom: 12px;
   border-bottom: 1px solid var(--border-subtle);
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
 .current-song-title {
-  font-size: 1.25rem;
+  font-size: 1.35rem;
   font-weight: 700;
   color: var(--text-main);
   letter-spacing: -0.01em;
@@ -520,6 +552,25 @@ body {
   font-size: 0.85rem;
   color: var(--text-muted);
   margin-top: 2px;
+}
+
+.stage-status-badge {
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 4px 12px;
+  border-radius: 12px;
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+  border: 1px solid var(--border-medium);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.stage-status-badge.recording {
+  color: #ffffff;
+  background: var(--accent-danger);
+  border-color: var(--accent-danger-hover);
 }
 
 /* ==========================================================================
@@ -746,6 +797,56 @@ body {
 
 .btn-circle:hover {
   background: var(--accent-primary-hover);
+}
+
+/* Botão Unificado: Play & Gravador Integrado */
+.btn-play-record {
+  background: var(--accent-primary);
+  color: #ffffff;
+  border: 1px solid #1d4ed8;
+  padding: 10px 22px;
+  border-radius: 24px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: var(--transition);
+  box-shadow: var(--shadow-sm);
+  width: auto;
+}
+
+.btn-play-record:hover:not(:disabled) {
+  background: var(--accent-primary-hover);
+}
+
+.btn-play-record.recording {
+  background: var(--accent-danger);
+  border-color: var(--accent-danger-hover);
+}
+
+.btn-play-record.recording:hover:not(:disabled) {
+  background: #dc2626;
+}
+
+.rec-dot-icon {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ef4444;
+  display: inline-block;
+  transition: background-color 0.2s ease;
+}
+
+.btn-play-record.recording .rec-dot-icon {
+  background: #ffffff;
+  animation: recBlink 1.5s infinite;
+}
+
+.play-icon {
+  font-size: 0.85rem;
+  line-height: 1;
 }
 
 .mic-rec-btn {

@@ -59,6 +59,12 @@ class TestHealthCheck:
         assert "Karaokê" in response.text
         assert "text/html" in response.headers.get("content-type", "")
 
+    def test_sing_serves_frontend_html(self, client: TestClient) -> None:
+        response = client.get("/sing")
+        assert response.status_code == 200
+        assert "Karaokê" in response.text
+        assert "text/html" in response.headers.get("content-type", "")
+
 
 class TestPrepareSongEndpoint:
     def test_prepare_song_via_json(
@@ -159,6 +165,35 @@ class TestListSongsEndpoint:
 
         assert response.status_code == 200
         mock_container.list_songs.execute.assert_called_once_with(only_ready=False)
+
+
+class TestGetSongEndpoint:
+    def test_get_song_success(
+        self, client: TestClient, mock_container: AppContainer
+    ) -> None:
+        mock_item = MagicMock()
+        mock_item.id = "s1"
+        mock_item.title = "Song One"
+        mock_item.artist = "Artist One"
+        mock_item.duration = 200.0
+        mock_item.status = "READY"
+        mock_item.instrumental_url = "/static/audio/processed/inst.wav"
+        mock_item.vocals_url = "/static/audio/processed/voc.wav"
+
+        mock_container.list_songs.execute.return_value = [mock_item]
+
+        response = client.get("/api/songs/s1")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["id"] == "s1"
+        assert data["title"] == "Song One"
+
+    def test_get_song_not_found(
+        self, client: TestClient, mock_container: AppContainer
+    ) -> None:
+        mock_container.list_songs.execute.return_value = []
+        response = client.get("/api/songs/not_found_id")
+        assert response.status_code == 404
 
 
 class TestGetLyricsEndpoint:

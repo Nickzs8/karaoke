@@ -203,3 +203,93 @@ def test_get_lyrics_parses_timestamps_with_minutes_and_fractions() -> None:
     assert lyrics[2].start_time == 120.0
     assert lyrics[2].end_time == 124.0
     assert lyrics[2].text == "Linha sem fração"
+
+
+def test_sanitize_metadata_youtube_noise() -> None:
+    adapter = LrclibAdapter()
+
+    title, artist = adapter._sanitize_metadata(
+        "Queen - All Dead, All Dead - At Last, the Video!", "Queen Official"
+    )
+    assert title == "All Dead, All Dead"
+    assert artist == "Queen"
+
+    title2, artist2 = adapter._sanitize_metadata(
+        "Bohemian Rhapsody [Official Video]", "Queen Topic"
+    )
+    assert title2 == "Bohemian Rhapsody"
+    assert artist2 == "Queen"
+
+    title3, artist3 = adapter._sanitize_metadata(
+        "Queen - Don't Stop Me Now (Official Music Video)", "Queen - Topic"
+    )
+    assert title3 == "Don't Stop Me Now"
+    assert artist3 == "Queen"
+
+    title4, artist4 = adapter._sanitize_metadata(
+        "Radio Ga Ga (Live Aid 1985)", "QueenVEVO"
+    )
+    assert title4 == "Radio Ga Ga"
+    assert artist4 == "Queen"
+
+
+def test_get_lyrics_with_youtube_metadata_finds_exact_match() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.path == "/api/get"
+        assert request.url.params["track_name"] == "All Dead, All Dead"
+        assert request.url.params["artist_name"] == "Queen"
+        return httpx.Response(
+            200,
+            json={
+                "id": 42,
+                "trackName": "All Dead, All Dead",
+                "artistName": "Queen",
+                "syncedLyrics": "[00:10.00] All dead, all dead\n[00:15.00]",
+            },
+        )
+
+    mock_client = httpx.Client(transport=httpx.MockTransport(handler))
+    adapter = LrclibAdapter(client=mock_client)
+
+    lyrics = adapter.get_lyrics(
+        title="Queen - All Dead, All Dead - At Last, the Video!",
+        artist="Queen Official",
+    )
+    assert len(lyrics) == 1
+    assert lyrics[0].text == "All dead, all dead"
+    assert lyrics[0].start_time == 10.0
+    assert lyrics[0].end_time == 15.0
+
+
+def test_get_lyrics_fallback_to_search_with_sanitized_metadata() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/api/get":
+            return httpx.Response(404, json={"message": "Not found"})
+
+        if request.url.path == "/api/search":
+            query = request.url.params.get("q", "")
+            if query == "Queen All Dead, All Dead":
+                return httpx.Response(
+                    200,
+                    json=[
+                        {
+                            "id": 100,
+                            "trackName": "All Dead, All Dead",
+                            "artistName": "Queen",
+                            "syncedLyrics": "[00:20.00] In time it comes\n[00:25.00]",
+                        }
+                    ],
+                )
+        return httpx.Response(404)
+
+    mock_client = httpx.Client(transport=httpx.MockTransport(handler))
+    adapter = LrclibAdapter(client=mock_client)
+
+    lyrics = adapter.get_lyrics(
+        title="Queen - All Dead, All Dead - At Last, the Video!",
+        artist="Queen Official",
+    )
+    assert len(lyrics) == 1
+    assert lyrics[0].text == "In time it comes"
+    assert lyrics[0].start_time == 20.0
+    assert lyrics[0].end_time == 25.0

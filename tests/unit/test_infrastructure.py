@@ -47,8 +47,23 @@ class TestHardwareDetection:
 
 
 class TestAppConfig:
-    def test_default_config_resolution(self) -> None:
+    def test_default_config_resolution(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Verifica os valores padrão e a resolução dos caminhos no AppConfig."""
+        monkeypatch.setattr(
+            "karaoke.infrastructure.config.load_env_file", lambda _: None
+        )
+        for env_var in (
+            "KARAOKE_CENTS_TOLERANCE",
+            "KARAOKE_PITCH_WEIGHT",
+            "KARAOKE_TIMING_WEIGHT",
+            "KARAOKE_STORAGE_DIR",
+            "KARAOKE_DEVICE",
+            "KARAOKE_DEMUCS_MODEL",
+            "KARAOKE_BASE_AUDIO_URL",
+            "KARAOKE_LRCLIB_URL",
+        ):
+            monkeypatch.delenv(env_var, raising=False)
+
         config = AppConfig.from_env()
 
         assert config.base_dir.is_dir() is True
@@ -58,7 +73,7 @@ class TestAppConfig:
         assert config.lrclib_url == "https://lrclib.net/api"
         assert config.pitch_weight == 0.7
         assert config.timing_weight == 0.3
-        assert config.cents_tolerance == 50.0
+        assert config.cents_tolerance == 75.0
 
         # Subpastas de armazenamento
         assert config.raw_storage_dir == config.storage_dir / "raw"

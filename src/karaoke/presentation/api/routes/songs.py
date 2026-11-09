@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, Query, Request, status
 from starlette.concurrency import run_in_threadpool
 from starlette.datastructures import UploadFile
 
-from karaoke.domain import InvalidAudioFormatError, Song
+from karaoke.domain import InvalidAudioFormatError, Song, SongNotFoundError
 from karaoke.infrastructure import AppContainer
 from karaoke.presentation.api.dependencies import get_app_container
 from karaoke.presentation.api.schemas import (
@@ -80,6 +80,34 @@ async def list_songs(
         )
         for item in items
     ]
+
+
+@router.get(
+    "/{id}",
+    response_model=SongCatalogItemResponse,
+    summary="Retorna os detalhes de uma música pelo ID",
+)
+async def get_song(
+    id: str,
+    container: ContainerDep,
+) -> SongCatalogItemResponse:
+    """Recupera os dados de uma música específica no catálogo."""
+    items = await run_in_threadpool(
+        container.list_songs.execute,
+        only_ready=False,
+    )
+    for item in items:
+        if item.id == id:
+            return SongCatalogItemResponse(
+                id=item.id,
+                title=item.title,
+                artist=item.artist,
+                duration=item.duration,
+                status=item.status,
+                instrumental_url=item.instrumental_url,
+                vocals_url=item.vocals_url,
+            )
+    raise SongNotFoundError(id)
 
 
 @router.get(
