@@ -2,6 +2,7 @@
 
 from pathlib import Path
 from typing import Any
+from urllib.parse import parse_qs, urlparse
 
 import yt_dlp
 
@@ -47,6 +48,18 @@ class YtDlpDownloaderAdapter(AudioDownloaderPort):
             raise AudioDownloadError("O termo de busca ou URL não pode ser vazio.")
 
         if clean_query.startswith(("http://", "https://", "www.")):
+            url_to_parse = (
+                clean_query
+                if clean_query.startswith(("http://", "https://"))
+                else f"https://{clean_query}"
+            )
+            parsed = urlparse(url_to_parse)
+            if "youtube.com" in parsed.netloc and parsed.path.rstrip("/") == "/results":
+                qs = parse_qs(parsed.query)
+                search_terms = qs.get("search_query")
+                if search_terms and search_terms[0].strip():
+                    return f"ytsearch1:{search_terms[0].strip()}"
+
             return clean_query
         return f"ytsearch1:{clean_query}"
 

@@ -152,3 +152,38 @@ class TestYtDlpDownloaderAdapter:
         called_opts = mock_ytdl_class.call_args[0][0]
         assert called_opts["postprocessors"][0]["preferredcodec"] == "wav"
         assert called_opts["postprocessor_args"] == ["-ar", "48000"]
+
+    @patch("yt_dlp.YoutubeDL")
+    def test_download_via_youtube_search_results_url_extracts_query(
+        self,
+        mock_ytdl_class: MagicMock,
+        adapter: YtDlpDownloaderAdapter,
+        tmp_path: Path,
+    ) -> None:
+        mock_instance = MagicMock()
+        mock_ytdl_class.return_value.__enter__.return_value = mock_instance
+
+        mock_instance.extract_info.return_value = {
+            "entries": [
+                {
+                    "id": "search_res_1",
+                    "title": "Good Old Fashioned Lover Boy",
+                    "artist": "Queen",
+                    "duration": 174.0,
+                }
+            ]
+        }
+
+        expected_audio_file = tmp_path / "search_res_1.mp3"
+        expected_audio_file.write_bytes(b"mp3_data")
+
+        search_url = (
+            "https://www.youtube.com/results?search_query=good+old+fashioned+lover+boy"
+        )
+        result = adapter.download(search_url, tmp_path)
+
+        # Valida que extraiu o termo e usou 'ytsearch1:'
+        mock_instance.extract_info.assert_called_once_with(
+            "ytsearch1:good old fashioned lover boy", download=True
+        )
+        assert result.title == "Good Old Fashioned Lover Boy"

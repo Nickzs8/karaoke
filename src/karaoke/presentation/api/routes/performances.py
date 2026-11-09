@@ -42,9 +42,7 @@ async def evaluate_performance(
     return _build_evaluation_response(score_result)
 
 
-# ==============================================================================
 # Funções Auxiliares Especializadas (SRP)
-# ==============================================================================
 
 
 async def _resolve_evaluate_inputs(

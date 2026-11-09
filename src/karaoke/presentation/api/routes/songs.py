@@ -108,7 +108,7 @@ async def get_lyrics(
         ],
     )
 
-    
+
 # Funções Auxiliares Especializadas (SRP)
 
 

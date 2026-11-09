@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Karaokê</title>
+  <link rel="stylesheet" href="/static/web/css/styles.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%2300f0ff%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z%22/><path d=%22M19 10v2a7 7 0 0 1-14 0v-2%22/><line x1=%2212%22 x2=%2212%22 y1=%2219%22 y2=%2222%22/></svg>">
+</head>
+<body>
+  <div class="container">
+    <!-- Header Principal -->
+    <header class="header">
+      <div class="logo-group">
+        <div class="logo-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#050b14" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+            <line x1="12" x2="12" y1="19" y2="22"></line>
+          </svg>
+        </div>
+        <div>
+          <h1 class="logo-title">Karaokê</h1>
+          <span class="logo-tag">Processamento de Áudio</span>
+        </div>
+      </div>
+      <div class="mic-badge" id="micBadge">
+        <span class="mic-dot"></span>
+        <span id="micStatusText">Microfone Pronto</span>
+      </div>
+    </header>
+
+    <!-- Grade Principal: Preparo e Catálogo -->
+    <div class="main-grid">
+      <!-- Painel de Preparação de Músicas -->
+      <section class="card">
+        <h2 class="card-title">Preparar Música</h2>
+
+        <div class="tabs">
+          <button class="tab-btn active" data-tab="tabYoutube">YouTube / Busca</button>
+          <button class="tab-btn" data-tab="tabUpload">Upload de Arquivo</button>
+        </div>
+
+        <!-- Aba YouTube -->
+        <div class="tab-content active" id="tabYoutube">
+          <form id="ytForm">
+            <div class="form-group">
+              <label class="form-label" for="ytQueryInput">Link do YouTube ou Nome da Música:</label>
+              <input type="text" id="ytQueryInput" class="form-input" placeholder="Ex: Queen Bohemian Rhapsody ou link" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="ytTitleInput">Título (opcional):</label>
+              <input type="text" id="ytTitleInput" class="form-input" placeholder="Título da faixa">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="ytArtistInput">Artista (opcional):</label>
+              <input type="text" id="ytArtistInput" class="form-input" placeholder="Nome do artista">
+            </div>
+            <button type="submit" class="btn btn-primary" id="ytSubmitBtn">
+              Extrair Instrumental e Letra
+            </button>
+          </form>
+        </div>
+
+        <!-- Aba Upload -->
+        <div class="tab-content" id="tabUpload">
+          <form id="fileForm">
+            <div class="form-group">
+              <div class="dropzone" id="dropzone">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="dropzone-icon">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="17 8 12 3 7 8"></polyline>
+                  <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+                <div class="dropzone-text" id="dropzoneText">
+                  Arraste um arquivo .mp3 ou .wav aqui<br>ou clique para selecionar
+                </div>
+                <input type="file" id="audioFileInput" accept="audio/*" style="display: none;">
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="fileTitleInput">Título da Música:</label>
+              <input type="text" id="fileTitleInput" class="form-input" placeholder="Ex: Minha Música">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="fileArtistInput">Artista / Banda:</label>
+              <input type="text" id="fileArtistInput" class="form-input" placeholder="Ex: Cantor Exemplo">
+            </div>
+            <button type="submit" class="btn btn-primary" id="fileSubmitBtn">
+              Processar Arquivo
+            </button>
+          </form>
+        </div>
+
+        <!-- Indicador de Progresso / Loading -->
+        <div class="loading-box" id="loadingBox">
+          <div class="loading-spinner"></div>
+          <div class="loading-text" id="loadingText">Processando áudio...</div>
+          <div class="loading-step" id="loadingStep">Separando faixas instrumentais...</div>
+        </div>
+      </section>
+
+      <!-- Painel de Catálogo de Músicas -->
+      <section class="card">
+        <h2 class="card-title">
+          <span>Catálogo de Músicas</span>
+          <span style="font-size: 0.85rem; color: var(--accent-cyan); font-weight: normal;" id="songsCount">(0)</span>
+        </h2>
+        <div class="songs-list" id="songsList">
+          <div class="empty-state">Carregando catálogo...</div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Palco do Karaokê (Player, Letras e Gravação) -->
+    <div class="stage-container" id="stageContainer" style="margin-top: 32px;">
+      <div class="stage-header">
+        <div>
+          <div class="current-song-title" id="currentSongTitle">Título da Música</div>
+          <div class="current-song-artist" id="currentSongArtist">Artista</div>
+        </div>
+        <button class="btn btn-secondary" id="btnChangeSong" style="width: auto; padding: 8px 16px;">
+          Trocar Música
+        </button>
+      </div>
+
+      <!-- Caixa de Letras Sincronizadas -->
+      <div class="lyrics-box" id="lyricsBox">
+        <div class="empty-state">Selecione uma música no catálogo acima para começar.</div>
+      </div>
+
+      <!-- Controles do Player e Gravação -->
+      <div class="player-controls">
+        <div class="timeline-row">
+          <span class="time-label" id="currentTimeLabel">00:00</span>
+          <div class="progress-bar-container" id="progressBarContainer">
+            <div class="progress-bar-fill" id="progressBarFill"></div>
+          </div>
+          <span class="time-label" id="totalTimeLabel">00:00</span>
+        </div>
+
+        <div class="action-row">
+          <div class="main-playback-btns">
+            <button class="btn-circle" id="btnPlayPause" title="Reproduzir / Pausar">
+              <span id="playIcon">▶</span>
+            </button>
+          </div>
+
+          <div style="display: flex; gap: 12px; align-items: center;">
+            <button class="mic-rec-btn" id="btnRecordMic">
+              <span class="rec-dot"></span>
+              <span id="recBtnLabel">Gravar Voz</span>
+            </button>
+            <button class="btn btn-primary" id="btnFinishSinging" style="width: auto;">
+              Finalizar e Avaliar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Pontuação da Performance -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="score-modal">
+      <div class="modal-header-tag">Resultado da Avaliação</div>
+      <h2>Pontuação da Performance</h2>
+
+      <div class="score-circle-wrapper">
+        <div class="score-number" id="scoreNumber">--</div>
+      </div>
+
+      <div class="score-rating" id="scoreRating">Avaliando...</div>
+
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-label">Afinação Melódica</div>
+          <div class="metric-value" id="pitchScoreValue">--%</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Precisão Rítmica</div>
+          <div class="metric-value" id="timingScoreValue">--%</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Desvio em Cents</div>
+          <div class="metric-value" id="centsErrorValue" style="font-size: 1.1rem;">--</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Desvio Temporal</div>
+          <div class="metric-value" id="timingDevValue" style="font-size: 1.1rem;">--</div>
+        </div>
+      </div>
+
+      <div class="pitch-canvas-wrapper">
+        <div style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 6px; text-align: left;">
+          Comparação Melódica: <span style="color: #00f0ff;">— Referência</span> vs <span style="color: #ec4899;">— Sua Voz</span>
+        </div>
+        <canvas id="pitchChartCanvas"></canvas>
+      </div>
+
+      <div class="modal-footer-btns">
+        <button class="btn btn-secondary" id="btnRetryModal">
+          Tentar Novamente
+        </button>
+        <button class="btn btn-primary" id="btnCloseModal">
+          Concluir
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/static/web/js/app.js"></script>
+</body>
+</html>

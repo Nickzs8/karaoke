@@ -53,6 +53,12 @@ class TestHealthCheck:
         assert response.status_code == 200
         assert response.json() == {"status": "ok"}
 
+    def test_root_serves_frontend_html(self, client: TestClient) -> None:
+        response = client.get("/")
+        assert response.status_code == 200
+        assert "Karaokê" in response.text
+        assert "text/html" in response.headers.get("content-type", "")
+
 
 class TestPrepareSongEndpoint:
     def test_prepare_song_via_json(
