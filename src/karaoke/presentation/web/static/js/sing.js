@@ -2,9 +2,9 @@
  * Controlador da Página 2: Palco do Karaokê, Player e Gravação Integrada
  */
 
-import { api } from "./api.js?v=1.0.1";
-import { AudioPlayer } from "./audio-player.js?v=1.0.1";
-import { VoiceRecorder } from "./recorder.js?v=1.0.1";
+import { api } from "./api.js?v=2.0.0";
+import { AudioPlayer } from "./audio-player.js?v=2.0.0";
+import { VoiceRecorder } from "./recorder.js?v=2.0.0";
 
 // Instâncias Globais
 const player = new AudioPlayer();
@@ -20,14 +20,11 @@ let autoEstimatedOffset = 0.0;
 const dom = {
   // Navegação e Header
   btnBack: document.getElementById("btnBack"),
-  micBadge: document.getElementById("micBadge"),
-  micStatusText: document.getElementById("micStatusText"),
 
   // Palco
   stageContainer: document.getElementById("stageContainer"),
   currentSongTitle: document.getElementById("currentSongTitle"),
   currentSongArtist: document.getElementById("currentSongArtist"),
-  stageStatusBadge: document.getElementById("stageStatusBadge"),
   lyricsBox: document.getElementById("lyricsBox"),
 
   // Barra de Sincronia
@@ -48,7 +45,6 @@ const dom = {
 
   // Botão Unificado Play & Record
   btnPlayRecord: document.getElementById("btnPlayRecord"),
-  recDotIcon: document.getElementById("recDotIcon"),
   playIcon: document.getElementById("playIcon"),
   playRecordLabel: document.getElementById("playRecordLabel"),
   btnFinishSinging: document.getElementById("btnFinishSinging"),
@@ -68,7 +64,6 @@ const dom = {
   latencyValue: document.getElementById("latencyValue"),
   centsErrorValue: document.getElementById("centsErrorValue"),
   timingDevValue: document.getElementById("timingDevValue"),
-  pitchCanvas: document.getElementById("pitchChartCanvas"),
   btnRetryModal: document.getElementById("btnRetryModal"),
   btnBackToCatalogModal: document.getElementById("btnBackToCatalogModal"),
 };
@@ -159,9 +154,6 @@ async function loadCurrentSongFromUrl() {
     } else {
       alert("Faixa instrumental não disponível para esta música.");
     }
-
-    dom.stageStatusBadge.textContent = "Pronto para Cantar";
-    dom.stageStatusBadge.className = "stage-status-badge";
   } catch (err) {
     alert(`Erro ao carregar música: ${err.message}`);
     window.location.replace("/");
@@ -287,24 +279,10 @@ function setControlState(isPlaying, isPaused = false) {
     dom.btnPlayRecord.classList.add("recording");
     dom.playIcon.textContent = "❚❚";
     dom.playRecordLabel.textContent = "Pausar";
-
-    dom.stageStatusBadge.textContent = "Gravando Voz...";
-    dom.stageStatusBadge.className = "stage-status-badge recording";
-
-    dom.micBadge.classList.add("active");
-    dom.micStatusText.textContent = "Microfone Ativo";
   } else {
     dom.btnPlayRecord.classList.remove("recording");
     dom.playIcon.textContent = "▶";
     dom.playRecordLabel.textContent = isPaused ? "Continuar" : "Começar a Cantar";
-
-    dom.stageStatusBadge.textContent = isPaused ? "Pausado" : "Pronto para Cantar";
-    dom.stageStatusBadge.className = "stage-status-badge";
-
-    if (!isPaused) {
-      dom.micBadge.classList.remove("active");
-      dom.micStatusText.textContent = "Microfone Pronto";
-    }
   }
 }
 
@@ -430,71 +408,22 @@ function showScoreModal(score) {
   dom.centsErrorValue.textContent = `${meanCents.toFixed(1)} cents`;
   dom.timingDevValue.textContent = `${timingDev.toFixed(2)}s`;
 
-  // Classificação da pontuação
+  // Classificação da pontuação com paleta Toggl Track
   if (score.total_score >= 85) {
     dom.scoreRating.textContent = "Excelente! Performance de alto nível";
-    dom.scoreRating.style.color = "var(--accent-warning)";
+    dom.scoreRating.style.color = "var(--color-magenta)";
   } else if (score.total_score >= 70) {
     dom.scoreRating.textContent = "Muito Bom! Ótima afinação e ritmo";
-    dom.scoreRating.style.color = "var(--accent-green)";
+    dom.scoreRating.style.color = "var(--color-amber)";
   } else if (score.total_score >= 50) {
     dom.scoreRating.textContent = "Satisfatório! Dentro da média esperada";
-    dom.scoreRating.style.color = "var(--accent-primary)";
+    dom.scoreRating.style.color = "var(--color-heather)";
   } else {
     dom.scoreRating.textContent = "Abaixo da média. Pratique mais!";
-    dom.scoreRating.style.color = "var(--accent-danger)";
+    dom.scoreRating.style.color = "#dc2626";
   }
 
-  renderPitchChart(score);
   dom.modalOverlay.classList.add("active");
-}
-
-function renderPitchChart(score) {
-  const canvas = dom.pitchCanvas;
-  const ctx = canvas.getContext("2d");
-  const width = (canvas.width = canvas.offsetWidth * window.devicePixelRatio);
-  const height = (canvas.height = canvas.offsetHeight * window.devicePixelRatio);
-
-  ctx.clearRect(0, 0, width, height);
-
-  // Fundo com grid sutil
-  ctx.strokeStyle = "rgba(255, 255, 255, 0.06)";
-  ctx.lineWidth = 1;
-  for (let y = 0; y < height; y += 30) {
-    ctx.beginPath();
-    ctx.moveTo(0, y);
-    ctx.lineTo(width, y);
-    ctx.stroke();
-  }
-
-  // Curva de Referência (Azul Royal)
-  ctx.beginPath();
-  ctx.strokeStyle = "#3b82f6";
-  ctx.lineWidth = 2 * window.devicePixelRatio;
-
-  const points = 40;
-  for (let i = 0; i <= points; i++) {
-    const x = (i / points) * width;
-    const y = height / 2 + Math.sin(i * 0.35) * (height * 0.28);
-    if (i === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-  }
-  ctx.stroke();
-
-  // Curva do Usuário (Violeta)
-  ctx.beginPath();
-  ctx.strokeStyle = "#8b5cf6";
-  ctx.lineWidth = 2 * window.devicePixelRatio;
-
-  const errorFactor = (100 - score.total_score) / 100;
-  for (let i = 0; i <= points; i++) {
-    const x = (i / points) * width;
-    const noise = (Math.sin(i * 1.5) + Math.cos(i * 0.8)) * (errorFactor * 25);
-    const y = height / 2 + Math.sin(i * 0.35) * (height * 0.28) + noise;
-    if (i === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-  }
-  ctx.stroke();
 }
 
 // ==========================================================================

@@ -81,7 +81,39 @@ Ao implementar novas funcionalidades, siga esta estratégia de testes:
 
 ---
 
-## 6. Checklist para Agentes antes de Concluir Tarefas
+## 6. Agente Avaliador de Código (Code Reviewer Agent)
+
+Sempre que um agente de IA editar, refatorar ou criar código neste repositório, o **Agente Avaliador de Código** deve ser acionado para auditar as mudanças antes que a tarefa seja dada como concluída.
+
+### 6.1. Critérios de Avaliação Obrigatórios
+O avaliador revisa a solução com base em 4 pilares:
+
+1. **Funcionamento e Verificação Real**:
+   - O código funciona de verdade? A suíte de testes (`pytest`) roda e passa integralmente sem regressões?
+   - Os novos fluxos possuem testes unitários condizentes?
+
+2. **Conformidade Arquitetural (Clean Architecture)**:
+   - A pureza do domínio foi violada? (Nenhuma lib externa em `domain/`).
+   - Há acoplamento indevido ou funções monolíticas violando o SRP?
+   - Todos os erros usam subclasses de `DomainError` de `domain/exceptions.py` (sem `ValueError` ou exceções genéricas)?
+
+3. **Princípio do Menor Esforço e Minimalismo (KISS / Minimal Diff)**:
+   - A alteração fez o **mínimo de mudanças possíveis** para atingir o objetivo?
+   - O código **reutilizou métodos, portas e classes já existentes** em vez de reinventar a roda ou duplicar lógica?
+   - Evitou *over-engineering*, abstrações desnecessárias ou modificações em arquivos não relacionados?
+
+4. **Qualidade Lógica e Tipagem**:
+   - A lógica é clara, direta e robusta a falhas?
+   - Todas as funções e retornos possuem *type hints* estritos?
+
+### 6.2. Emissão do Veredito ao Agente Principal
+O avaliador deve analisar o `git diff` e o resultado dos testes, enviando seu veredito formal ao agente principal:
+- **`[VEREDITO: APROVADO]`**: Código funcional, enxuto, aderente à arquitetura e com o menor esforço necessário.
+- **`[VEREDITO: REPROVADO]`**: Lista objetiva dos problemas encontrados (ex: excesso de código, violação arquitetural, quebra de teste, falta de reaproveitamento), instruindo o agente principal a corrigir antes de finalizar.
+
+---
+
+## 7. Checklist para Agentes antes de Concluir Tarefas
 
 - [ ] As novas classes respeitam o limite de sua camada?
 - [ ] Nenhuma biblioteca externa foi importada dentro de `domain/` ou `application/`?
@@ -89,5 +121,6 @@ Ao implementar novas funcionalidades, siga esta estratégia de testes:
 - [ ] Foram adicionados tipos estáticos em todos os argumentos e retornos?
 - [ ] Em caso de incerteza ou ambiguidade, o usuário foi consultado antes de assumir decisões?
 - [ ] Todos os erros lançados estão definidos em `domain/exceptions.py` herdando de `DomainError` (sem `ValueError` nativo)?
+- [ ] O código foi submetido à revisão do Agente Avaliador e recebeu `[VEREDITO: APROVADO]`?
 - [ ] Testes unitários foram criados ou atualizados para o novo caso de uso?
 - [ ] Nenhum arquivo temporário ou binário de áudio foi versionado?

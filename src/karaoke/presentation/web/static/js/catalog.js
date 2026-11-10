@@ -1,14 +1,11 @@
 /**
- * Controlador da Página 1: Preparação de Músicas e Catálogo
+ * Controlador da Página 1: Preparação de Músicas e Catálogo (Toggl Track Style)
  */
 
-import { api } from "./api.js?v=1.0.1";
+import { api } from "./api.js?v=2.0.0";
 
 // Elementos do DOM
 const dom = {
-  micBadge: document.getElementById("micBadge"),
-  micStatusText: document.getElementById("micStatusText"),
-
   // Abas de Preparo
   tabButtons: document.querySelectorAll(".tab-btn"),
   tabContents: document.querySelectorAll(".tab-content"),
@@ -43,7 +40,6 @@ const dom = {
 document.addEventListener("DOMContentLoaded", () => {
   setupTabs();
   setupForms();
-  setupMicCheck();
   loadCatalog();
 });
 
@@ -76,15 +72,15 @@ function setupForms() {
     dom.ytSubmitBtn.disabled = true;
 
     try {
-      updateLoadingStep("2/3 Separando voz e faixas instrumentais...");
+      updateLoadingStep("2/3 Separando faixas com inteligência artificial...");
       const song = await api.prepareSongByUrl(
         query,
         dom.ytTitleInput.value,
         dom.ytArtistInput.value
       );
-      updateLoadingStep("3/3 Finalizando sincronização...");
+      updateLoadingStep("3/3 Sincronizando letra...");
 
-      // Redireciona diretamente para a página de cantar
+      // Redireciona diretamente para o palco de performance
       window.location.href = `/sing?id=${encodeURIComponent(song.id)}`;
     } catch (err) {
       alert(`Erro: ${err.message}`);
@@ -131,7 +127,7 @@ function setupForms() {
         dom.fileArtistInput.value
       );
 
-      // Redireciona diretamente para a página de cantar
+      // Redireciona diretamente para o palco de performance
       window.location.href = `/sing?id=${encodeURIComponent(song.id)}`;
     } catch (err) {
       alert(`Erro: ${err.message}`);
@@ -169,17 +165,17 @@ function hideLoading() {
 async function loadCatalog() {
   try {
     const songs = await api.getSongs(true);
-    dom.songsCount.textContent = `(${songs.length})`;
+    dom.songsCount.textContent = `${songs.length} ${songs.length === 1 ? "faixa" : "faixas"}`;
 
     if (songs.length === 0) {
-      dom.songsList.innerHTML = `<div class="empty-state">Nenhuma música pronta no catálogo ainda.<br>Prepare uma acima para começar a cantar!</div>`;
+      dom.songsList.innerHTML = `<div class="empty-state">Nenhuma faixa pronta no catálogo ainda.<br>Prepare uma música no painel ao lado para começar!</div>`;
       return;
     }
 
     dom.songsList.innerHTML = "";
-    songs.forEach((song) => {
+    songs.forEach((song, index) => {
       const item = document.createElement("div");
-      item.className = "song-item";
+      item.className = "song-row";
 
       const minutes = Math.floor(song.duration / 60);
       const seconds = Math.floor(song.duration % 60)
@@ -187,16 +183,17 @@ async function loadCatalog() {
         .padStart(2, "0");
 
       item.innerHTML = `
-        <div class="song-info">
-          <div class="song-name">${escapeHtml(song.title)}</div>
-          <div class="song-meta">
-            <span>${escapeHtml(song.artist)}</span>
-            <span>${minutes}:${seconds}</span>
-          </div>
+        <div class="col-num">${index + 1}</div>
+        <div class="col-track">
+          <div class="song-title">${escapeHtml(song.title)}</div>
+          <div class="song-artist">${escapeHtml(song.artist)}</div>
         </div>
-        <button class="btn-sing" data-id="${song.id}">
-          Cantar
-        </button>
+        <div class="col-duration">${minutes}:${seconds}</div>
+        <div class="col-action">
+          <button class="btn-sing" data-id="${song.id}">
+            Cantar
+          </button>
+        </div>
       `;
 
       item.querySelector(".btn-sing").addEventListener("click", () => {
@@ -208,26 +205,6 @@ async function loadCatalog() {
   } catch (err) {
     console.error("Falha ao listar catálogo:", err);
     dom.songsList.innerHTML = `<div class="empty-state">Erro ao carregar catálogo: ${escapeHtml(err.message)}</div>`;
-  }
-}
-
-// ==========================================================================
-// 3. Verificação de Permissões de Microfone
-// ==========================================================================
-
-async function setupMicCheck() {
-  if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-    try {
-      const permissionStatus = await navigator.permissions?.query({
-        name: "microphone",
-      });
-      if (permissionStatus && permissionStatus.state === "granted") {
-        dom.micBadge.classList.add("active");
-        dom.micStatusText.textContent = "Microfone Conectado";
-      }
-    } catch {
-      // Navegadores que não suportam permissions.query para mic
-    }
   }
 }
 

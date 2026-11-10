@@ -3,115 +3,124 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Karaokê - Catálogo & Preparação</title>
-  <link rel="stylesheet" href="/static/web/css/styles.css?v=1.0.2">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%233b82f6%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z%22/><path d=%22M19 10v2a7 7 0 0 1-14 0v-2%22/><line x1=%2212%22 x2=%2212%22 y1=%2219%22 y2=%2222%22/></svg>">
+  <title>Karaokê — Catálogo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400..800;1,14..32,400..800&family=Inter+Tight:ital,wght@0,700;0,800;1,700;1,800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/web/css/styles.css?v=2.0.2">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23e57cd8%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z%22/><path d=%22M19 10v2a7 7 0 0 1-14 0v-2%22/><line x1=%2212%22 x2=%2212%22 y1=%2219%22 y2=%2222%22/></svg>">
 </head>
 <body>
-  <div class="container">
-    <!-- Header Principal -->
-    <header class="header">
-      <div class="logo-group">
-        <div class="logo-icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
-            <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-            <line x1="12" x2="12" y1="19" y2="22"></line>
-          </svg>
-        </div>
-        <div>
-          <h1 class="logo-title">Karaokê</h1>
-        </div>
-      </div>
-      <div class="mic-badge" id="micBadge">
-        <span class="mic-dot"></span>
-        <span id="micStatusText">Microfone Pronto</span>
-      </div>
-    </header>
+  <!-- Hero Stage (Banda Escura Plum #2c1338) -->
+  <header class="hero-stage">
+    <div class="hero-top-nav">
+      <div class="brand-wordmark">Karaokê</div>
+    </div>
 
-    <!-- Grade Principal: Preparo e Catálogo -->
-    <main class="main-grid">
-      <!-- Painel de Preparação de Músicas -->
-      <section class="card">
-        <h2 class="card-title">Preparar Música</h2>
+    <div class="hero-content">
+      <h1 class="hero-headline">
+        Hoje o microfone é <span class="rotalic-highlight">seu</span>
+      </h1>
+      <p class="hero-subtext">
+        Cole um link, escolha uma faixa do catálogo e cante com a letra na tela.
+      </p>
+    </div>
+  </header>
 
-        <div class="tabs">
-          <button class="tab-btn active" data-tab="tabYoutube">YouTube / Busca</button>
-          <button class="tab-btn" data-tab="tabUpload">Upload de Arquivo</button>
-        </div>
+  <!-- Seção de Conteúdo (Superfície Bone #fefbfa) -->
+  <main class="content-canvas">
+    <div class="content-container">
+      <div class="catalog-grid">
+        <!-- Card 1: Preparar Música -->
+        <section class="card">
+          <h2 class="card-title">Preparar música</h2>
 
-        <!-- Aba YouTube -->
-        <div class="tab-content active" id="tabYoutube">
-          <form id="ytForm">
-            <div class="form-group">
-              <label class="form-label" for="ytQueryInput">Link do YouTube ou Nome da Música:</label>
-              <input type="text" id="ytQueryInput" class="form-input" placeholder="Ex: Queen Bohemian Rhapsody ou link" required>
-            </div>
-            <div class="form-group">
-              <label class="form-label" for="ytTitleInput">Título (opcional):</label>
-              <input type="text" id="ytTitleInput" class="form-input" placeholder="Título da faixa">
-            </div>
-            <div class="form-group">
-              <label class="form-label" for="ytArtistInput">Artista (opcional):</label>
-              <input type="text" id="ytArtistInput" class="form-input" placeholder="Nome do artista">
-            </div>
-            <button type="submit" class="btn btn-primary" id="ytSubmitBtn">
-              Extrair Instrumental e Letra
-            </button>
-          </form>
-        </div>
+          <div class="tabs">
+            <button class="tab-btn active" data-tab="tabYoutube">YouTube / busca</button>
+            <button class="tab-btn" data-tab="tabUpload">Upload de arquivo</button>
+          </div>
 
-        <!-- Aba Upload -->
-        <div class="tab-content" id="tabUpload">
-          <form id="fileForm">
-            <div class="form-group">
-              <div class="dropzone" id="dropzone">
-                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="dropzone-icon">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                  <polyline points="17 8 12 3 7 8"></polyline>
-                  <line x1="12" y1="3" x2="12" y2="15"></line>
-                </svg>
-                <div class="dropzone-text" id="dropzoneText">
-                  Arraste um arquivo .mp3 ou .wav aqui<br>ou clique para selecionar
-                </div>
-                <input type="file" id="audioFileInput" accept="audio/*" style="display: none;">
+          <!-- Aba YouTube -->
+          <div class="tab-content active" id="tabYoutube">
+            <form id="ytForm">
+              <div class="form-group">
+                <label class="form-label" for="ytQueryInput">Link do YouTube ou nome da música</label>
+                <input type="text" id="ytQueryInput" class="form-input" placeholder="Ex.: Queen Bohemian Rhapsody" required>
               </div>
-            </div>
-            <div class="form-group">
-              <label class="form-label" for="fileTitleInput">Título da Música:</label>
-              <input type="text" id="fileTitleInput" class="form-input" placeholder="Ex: Minha Música">
-            </div>
-            <div class="form-group">
-              <label class="form-label" for="fileArtistInput">Artista / Banda:</label>
-              <input type="text" id="fileArtistInput" class="form-input" placeholder="Ex: Cantor Exemplo">
-            </div>
-            <button type="submit" class="btn btn-primary" id="fileSubmitBtn">
-              Processar Arquivo
-            </button>
-          </form>
-        </div>
+              <div class="form-group">
+                <label class="form-label" for="ytTitleInput">Título (opcional)</label>
+                <input type="text" id="ytTitleInput" class="form-input" placeholder="Título da faixa">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="ytArtistInput">Artista (opcional)</label>
+                <input type="text" id="ytArtistInput" class="form-input" placeholder="Nome do artista">
+              </div>
+              <button type="submit" class="btn btn-amber" id="ytSubmitBtn">
+                Extrair instrumental e letra
+              </button>
+            </form>
+          </div>
 
-        <!-- Indicador de Progresso / Loading -->
-        <div class="loading-box" id="loadingBox">
-          <div class="loading-spinner"></div>
-          <div class="loading-text" id="loadingText">Processando áudio...</div>
-          <div class="loading-step" id="loadingStep">Separando faixas instrumentais...</div>
-        </div>
-      </section>
+          <!-- Aba Upload -->
+          <div class="tab-content" id="tabUpload">
+            <form id="fileForm">
+              <div class="form-group">
+                <div class="dropzone" id="dropzone">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="dropzone-icon">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="17 8 12 3 7 8"></polyline>
+                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                  </svg>
+                  <div class="dropzone-text" id="dropzoneText">
+                    Arraste um arquivo .mp3 ou .wav aqui<br>ou clique para selecionar
+                  </div>
+                  <input type="file" id="audioFileInput" accept="audio/*" style="display: none;">
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="fileTitleInput">Título da música</label>
+                <input type="text" id="fileTitleInput" class="form-input" placeholder="Ex.: Minha Música">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="fileArtistInput">Artista / Banda</label>
+                <input type="text" id="fileArtistInput" class="form-input" placeholder="Ex.: Cantor Exemplo">
+              </div>
+              <button type="submit" class="btn btn-amber" id="fileSubmitBtn">
+                Processar arquivo
+              </button>
+            </form>
+          </div>
 
-      <!-- Painel de Catálogo de Músicas -->
-      <section class="card">
-        <h2 class="card-title">
-          <span>Catálogo de Músicas</span>
-          <span class="songs-count" id="songsCount">(0)</span>
-        </h2>
-        <div class="songs-list" id="songsList">
-          <div class="empty-state">Carregando catálogo...</div>
-        </div>
-      </section>
-    </main>
-  </div>
+          <!-- Indicador de Progresso / Loading -->
+          <div class="loading-box" id="loadingBox">
+            <div class="loading-spinner"></div>
+            <div class="loading-text" id="loadingText">Processando áudio...</div>
+            <div class="loading-step" id="loadingStep">Separando faixas instrumentais...</div>
+          </div>
+        </section>
 
-  <script type="module" src="/static/web/js/catalog.js?v=1.0.1"></script>
+        <!-- Card 2: Catálogo de Músicas -->
+        <section class="card">
+          <div class="catalog-header">
+            <h2 class="card-title" style="margin-bottom: 0;">Catálogo</h2>
+            <span class="songs-count" id="songsCount">0 faixas</span>
+          </div>
+
+          <div class="catalog-table-header">
+            <div class="col-num">#</div>
+            <div class="col-track">FAIXA</div>
+            <div class="col-duration">DURAÇÃO</div>
+            <div class="col-action"></div>
+          </div>
+
+          <div class="songs-list" id="songsList">
+            <div class="empty-state">Carregando catálogo...</div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <script type="module" src="/static/web/js/catalog.js?v=2.0.0"></script>
 </body>
 </html>

@@ -74,13 +74,15 @@ class LrclibAdapter(LyricsProviderPort):
 
         try:
             with self._create_or_reuse_client() as client:
-                # 1. Correspondência exata com metadados limpos
-                if clean_artist:
-                    exact_lrc = self._request_exact_match(
-                        client, clean_title, clean_artist
-                    )
-                    if exact_lrc:
-                        return exact_lrc
+                title_candidates = self._title_variants(clean_title)
+                artist_candidates = self._artist_variants(clean_artist)
+
+                # 1. Correspondência exata tentando variações de título e artista limpos
+                for t_cand in title_candidates:
+                    for a_cand in artist_candidates:
+                        exact_lrc = self._request_exact_match(client, t_cand, a_cand)
+                        if exact_lrc:
+                            return exact_lrc
 
                 # 2. Correspondência exata com metadados originais (se diferirem)
                 if artist and (clean_title != title or clean_artist != artist):
@@ -101,6 +103,46 @@ class LrclibAdapter(LyricsProviderPort):
             # Fallback gracioso: qualquer falha de rede/parsing retorna None
             return None
 
+    def _normalize_for_match(self, text: str) -> str:
+        """Normaliza texto para comparação fonética/textual de artistas."""
+        lowered = text.lower()
+        replaced = re.sub(r"&", " e ", lowered)
+        replaced = re.sub(r"\band\b", " e ", replaced)
+        cleaned = re.sub(r"[^\w\s]", " ", replaced)
+        return " ".join(cleaned.split())
+
+    def _artists_match(self, candidate: str, target: str) -> bool:
+        """Verifica se dois nomes de artistas coincidem semanticamente."""
+        norm_cand = self._normalize_for_match(candidate)
+        norm_target = self._normalize_for_match(target)
+        if not norm_cand or not norm_target:
+            return False
+        return norm_cand in norm_target or norm_target in norm_cand
+
+    def _artist_variants(self, artist: str | None) -> list[str]:
+        """Gera variações comuns de conectivos em nomes de artistas (&, e, and)."""
+        if not artist:
+            return []
+        variants = [artist]
+        if " e " in artist:
+            variants.append(re.sub(r"\b e \b", " & ", artist))
+            variants.append(re.sub(r"\b e \b", " and ", artist))
+        elif " & " in artist:
+            variants.append(artist.replace(" & ", " e "))
+            variants.append(artist.replace(" & ", " and "))
+        elif " and " in artist:
+            variants.append(re.sub(r"\band\b", " & ", artist))
+            variants.append(re.sub(r"\band\b", " e ", artist))
+        return [v.strip() for v in dict.fromkeys(variants) if v.strip()]
+
+    def _title_variants(self, title: str) -> list[str]:
+        """Gera variantes do título (com e sem conteúdo entre parênteses)."""
+        variants = [title]
+        without_parens = re.sub(r"\s*[\(\[\{].*?[\)\]\}]\s*", " ", title).strip()
+        if without_parens and without_parens != title:
+            variants.append(without_parens)
+        return [v.strip() for v in dict.fromkeys(variants) if v.strip()]
+
     def _sanitize_metadata(
         self, title: str, artist: str | None
     ) -> tuple[str, str | None]:
@@ -116,30 +158,35 @@ class LrclibAdapter(LyricsProviderPort):
                 clean_artist = None
 
         clean_title = title.strip()
-        # Remove parênteses e colchetes comuns com termos de vídeo
+        # Remove parênteses e colchetes comuns com termos de vídeo ou álbuns
         video_tags_pattern = (
-            r"(?i)[\(\[\{](?:official|top of the pops|\d{4}|video|lyric"
-            r"|audio|remaster|hd|4k|at last|live|clip|visualizer).*?[\)\]\}]"
+            r"(?i)[\(\[\{](?:official|oficial|top of the pops|\d{4}|video"
+            r"|videoclipe|clipe|clip|lyric|letra|audio|álbum|album|cd|dvd"
+            r"|remaster|hd|4k|at last|live|ao vivo|ensaio|acústico|acoustic"
+            r"|deluxe|versão|version|visualizer|completo|full).*?[\)\]\}]"
         )
         clean_title = re.sub(video_tags_pattern, "", clean_title)
 
         # Remove sufixos como '- At Last, the Video!' ou '- Official Audio'
         suffix_pattern = (
-            r"(?i)\s*-\s*(?:at last|official|video|lyric|audio|hd"
-            r"|live|remaster|visualizer).*$"
+            r"(?i)\s*-\s*(?:at last|official|oficial|video|videoclipe"
+            r"|clipe|lyric|letra|audio|hd|live|ao vivo|remaster"
+            r"|visualizer|cd|dvd|album|álbum).*$"
         )
         clean_title = re.sub(suffix_pattern, "", clean_title)
 
-        # Detecta padrão 'Artista - Título' no título do vídeo
+        # Detecta padrão 'Artista - Título' ou 'Título - Artista' no título do vídeo
         if " - " in clean_title:
             parts = clean_title.split(" - ", 1)
-            cand_artist = parts[0].strip()
-            cand_title = parts[1].strip()
-            if clean_artist and cand_artist.lower() in clean_artist.lower():
-                clean_title = cand_title
+            left = parts[0].strip()
+            right = parts[1].strip()
+            if clean_artist and self._artists_match(left, clean_artist):
+                clean_title = right
+            elif clean_artist and self._artists_match(right, clean_artist):
+                clean_title = left
             elif not clean_artist:
-                clean_artist = cand_artist
-                clean_title = cand_title
+                clean_artist = left
+                clean_title = right
 
         clean_title = clean_title.strip(" -–—|")
         if not clean_title:
@@ -156,14 +203,24 @@ class LrclibAdapter(LyricsProviderPort):
     ) -> list[str]:
         """Gera lista de consultas de busca textual ordenadas por especificidade."""
         queries: list[str] = []
-        if clean_artist and clean_title:
-            queries.append(f"{clean_artist} {clean_title}")
-        if clean_title and clean_title not in queries:
-            queries.append(clean_title)
+        title_variants = self._title_variants(clean_title)
+        artist_variants = self._artist_variants(clean_artist)
+
+        for a in artist_variants:
+            for t in title_variants:
+                q = f"{a} {t}".strip()
+                if q and q not in queries:
+                    queries.append(q)
+
+        for t in title_variants:
+            if t not in queries:
+                queries.append(t)
+
         if raw_artist and raw_title:
-            raw_combined = f"{raw_artist} {raw_title}"
-            if raw_combined not in queries:
+            raw_combined = f"{raw_artist} {raw_title}".strip()
+            if raw_combined and raw_combined not in queries:
                 queries.append(raw_combined)
+
         return queries
 
     def _create_or_reuse_client(self) -> Any:

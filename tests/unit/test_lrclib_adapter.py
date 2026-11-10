@@ -232,6 +232,13 @@ def test_sanitize_metadata_youtube_noise() -> None:
     assert title4 == "Radio Ga Ga"
     assert artist4 == "Queen"
 
+    title5, artist5 = adapter._sanitize_metadata(
+        "Você pra Sempre (Inveja) - Sandy & Junior (CD Identidade)",
+        "Sandy e Junior",
+    )
+    assert title5 == "Você pra Sempre (Inveja)"
+    assert artist5 == "Sandy e Junior"
+
 
 def test_get_lyrics_with_youtube_metadata_finds_exact_match() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
@@ -293,3 +300,44 @@ def test_get_lyrics_fallback_to_search_with_sanitized_metadata() -> None:
     assert lyrics[0].text == "In time it comes"
     assert lyrics[0].start_time == 20.0
     assert lyrics[0].end_time == 25.0
+
+
+def test_get_lyrics_sandy_junior_variation_and_album_noise() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        # Quando requisitar com título limpo e artista exato ou com &
+        if request.url.path == "/api/get":
+            track = request.url.params.get("track_name")
+            artist = request.url.params.get("artist_name")
+            if track == "Você pra Sempre (Inveja)" and artist in (
+                "Sandy & Junior",
+                "Sandy e Junior",
+            ):
+                return httpx.Response(
+                    200,
+                    json={
+                        "id": 88,
+                        "trackName": "Você Pra Sempre (Inveja)",
+                        "artistName": "Sandy & Junior",
+                        "syncedLyrics": (
+                            "[00:19.71] Eu só quero estar no teu pensamento\n"
+                            "[00:24.43] Dentro dos teus sonhos e no teu olhar\n"
+                            "[00:29.11]"
+                        ),
+                    },
+                )
+        return httpx.Response(404)
+
+    mock_client = httpx.Client(transport=httpx.MockTransport(handler))
+    adapter = LrclibAdapter(client=mock_client)
+
+    lyrics = adapter.get_lyrics(
+        title="Você pra Sempre (Inveja) - Sandy & Junior (CD Identidade)",
+        artist="Sandy e Junior",
+    )
+    assert len(lyrics) == 2
+    assert lyrics[0].text == "Eu só quero estar no teu pensamento"
+    assert lyrics[0].start_time == 19.71
+    assert lyrics[0].end_time == 24.43
+    assert lyrics[1].text == "Dentro dos teus sonhos e no teu olhar"
+    assert lyrics[1].start_time == 24.43
+    assert lyrics[1].end_time == 29.11

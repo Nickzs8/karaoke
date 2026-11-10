@@ -3,109 +3,94 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Karaokê - Palco de Performance</title>
-  <link rel="stylesheet" href="/static/web/css/styles.css?v=1.0.2">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%233b82f6%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z%22/><path d=%22M19 10v2a7 7 0 0 1-14 0v-2%22/><line x1=%2212%22 x2=%2212%22 y1=%2219%22 y2=%2222%22/></svg>">
+  <title>Karaokê — Palco de Performance</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400..800;1,14..32,400..800&family=Inter+Tight:ital,wght@0,700;0,800;1,700;1,800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/web/css/styles.css?v=2.0.3">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23e57cd8%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z%22/><path d=%22M19 10v2a7 7 0 0 1-14 0v-2%22/><line x1=%2212%22 x2=%2212%22 y1=%2219%22 y2=%2222%22/></svg>">
 </head>
-<body>
-  <div class="container container-stage">
-    <!-- Header de Navegação do Palco -->
-    <header class="header header-stage">
-      <div class="header-nav-left">
-        <a href="/" class="btn-back" id="btnBack">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="19" y1="12" x2="5" y2="12"></line>
-            <polyline points="12 19 5 12 12 5"></polyline>
-          </svg>
-          Voltar ao Catálogo
-        </a>
-      </div>
-
-      <div class="logo-group">
-        <div class="logo-icon logo-icon-sm">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
-            <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-            <line x1="12" x2="12" y1="19" y2="22"></line>
-          </svg>
-        </div>
-        <h1 class="logo-title logo-title-sm">Karaokê</h1>
-      </div>
-
-      <div class="mic-badge" id="micBadge">
-        <span class="mic-dot"></span>
-        <span id="micStatusText">Microfone Pronto</span>
-      </div>
-    </header>
-
-    <!-- Palco Principal de Performance -->
-    <main class="stage-page-container" id="stageContainer">
-      <div class="stage-header">
-        <div>
-          <div class="current-song-title" id="currentSongTitle">Carregando música...</div>
-          <div class="current-song-artist" id="currentSongArtist">Aguarde...</div>
-        </div>
-        <div class="stage-status-badge" id="stageStatusBadge">Pronto para Cantar</div>
-      </div>
-
-      <!-- Barra de Controle de Sincronia da Letra -->
-      <div class="sync-bar" id="syncBar">
-        <div class="sync-info">
-          <span class="sync-title">Sincronia da Letra</span>
-          <span class="sync-subtitle">Compense introduções ou silêncio inicial</span>
-        </div>
-        <div class="sync-controls">
-          <button type="button" class="btn-sync-step" id="btnSyncMinusLarge" title="Adiantar 1 segundo (-1.0s)">-1.0s</button>
-          <button type="button" class="btn-sync-step" id="btnSyncMinusSmall" title="Adiantar 0.2 segundos (-0.2s)">-0.2s</button>
-          <div class="sync-display-pill" id="syncValueDisplay" title="Offset atual da letra">+0.0s</div>
-          <button type="button" class="btn-sync-step" id="btnSyncPlusSmall" title="Atrasar 0.2 segundos (+0.2s)">+0.2s</button>
-          <button type="button" class="btn-sync-step" id="btnSyncPlusLarge" title="Atrasar 1 segundo (+1.0s)">+1.0s</button>
-          <button type="button" class="btn-sync-reset" id="btnSyncReset" title="Zerar ajuste de sincronia">Zerar</button>
-          <button type="button" class="btn-sync-auto" id="btnSyncAuto" style="display: none;" title="Aplicar offset detectado automaticamente">Auto</button>
-        </div>
-      </div>
-
-      <!-- Caixa de Letras Sincronizadas -->
-      <div class="lyrics-box" id="lyricsBox">
-        <div class="empty-state">Carregando letra sincronizada...</div>
-      </div>
-
-      <!-- Controles Integrados do Player e Gravação -->
-      <div class="player-controls">
-        <div class="timeline-row">
-          <span class="time-label" id="currentTimeLabel">00:00</span>
-          <div class="progress-bar-container" id="progressBarContainer">
-            <div class="progress-bar-fill" id="progressBarFill"></div>
-          </div>
-          <span class="time-label" id="totalTimeLabel">00:00</span>
-        </div>
-
-        <div class="action-row">
-          <div class="main-playback-btns">
-            <!-- Botão Unificado: Tocar e Gravar Voz Simultaneamente -->
-            <button class="btn btn-play-record" id="btnPlayRecord" title="Começar a cantar (reproduz instrumental e grava voz)">
-              <span class="rec-dot-icon" id="recDotIcon"></span>
-              <span class="play-icon" id="playIcon">▶</span>
-              <span id="playRecordLabel">Começar a Cantar</span>
-            </button>
-          </div>
-
-          <div>
-            <button class="btn btn-secondary" id="btnFinishSinging" style="width: auto;">
-              Finalizar e Avaliar
-            </button>
-          </div>
-        </div>
-      </div>
-    </main>
-
-    <!-- Indicador de Carregamento / Avaliação -->
-    <div class="loading-box" id="stageLoadingBox" style="margin-top: 20px;">
-      <div class="loading-spinner"></div>
-      <div class="loading-text" id="stageLoadingText">Avaliando performance...</div>
-      <div class="loading-step" id="stageLoadingStep">Analisando afinação e ritmo da voz...</div>
+<body class="page-sing">
+  <!-- Hero Stage (Banda Escura Plum #2c1338) -->
+  <header class="hero-stage hero-stage-sing">
+    <div class="hero-top-nav">
+      <a href="/" class="btn-back" id="btnBack">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="19" y1="12" x2="5" y2="12"></line>
+          <polyline points="12 19 5 12 12 5"></polyline>
+        </svg>
+        Voltar ao Catálogo
+      </a>
     </div>
-  </div>
+
+    <div class="stage-song-banner">
+      <h1 class="stage-song-title" id="currentSongTitle">Carregando música...</h1>
+      <div class="stage-song-artist" id="currentSongArtist">Aguarde...</div>
+    </div>
+  </header>
+
+  <!-- Palco de Performance (Superfície Bone #fefbfa) -->
+  <main class="content-canvas content-canvas-sing">
+    <div class="content-container">
+      <div class="stage-card-wrapper card" id="stageContainer">
+        <!-- Barra de Controle de Sincronia da Letra -->
+        <div class="sync-bar" id="syncBar">
+          <div class="sync-info">
+            <span class="sync-title">Sincronia da Letra</span>
+            <span class="sync-subtitle">Compense introduções ou silêncio inicial</span>
+          </div>
+          <div class="sync-controls">
+            <button type="button" class="btn-sync-step" id="btnSyncMinusLarge" title="Adiantar 1 segundo (-1.0s)">-1.0s</button>
+            <button type="button" class="btn-sync-step" id="btnSyncMinusSmall" title="Adiantar 0.2 segundos (-0.2s)">-0.2s</button>
+            <div class="sync-display-pill" id="syncValueDisplay" title="Offset atual da letra">+0.0s</div>
+            <button type="button" class="btn-sync-step" id="btnSyncPlusSmall" title="Atrasar 0.2 segundos (+0.2s)">+0.2s</button>
+            <button type="button" class="btn-sync-step" id="btnSyncPlusLarge" title="Atrasar 1 segundo (+1.0s)">+1.0s</button>
+            <button type="button" class="btn-sync-reset" id="btnSyncReset" title="Zerar ajuste de sincronia">Zerar</button>
+            <button type="button" class="btn-sync-auto" id="btnSyncAuto" style="display: none;" title="Aplicar offset detectado automaticamente">Auto</button>
+          </div>
+        </div>
+
+        <!-- Caixa de Letras Sincronizadas (Teleprompter) -->
+        <div class="lyrics-box" id="lyricsBox">
+          <div class="empty-state">Carregando letra sincronizada...</div>
+        </div>
+
+        <!-- Controles Integrados do Player e Gravação -->
+        <div class="player-controls">
+          <div class="timeline-row">
+            <span class="time-label" id="currentTimeLabel">00:00</span>
+            <div class="progress-bar-container" id="progressBarContainer">
+              <div class="progress-bar-fill" id="progressBarFill"></div>
+            </div>
+            <span class="time-label" id="totalTimeLabel">00:00</span>
+          </div>
+
+          <div class="action-row">
+            <div>
+              <!-- Botão Unificado: Tocar e Gravar Voz Simultaneamente (Padrão Amber) -->
+              <button class="btn btn-play-record" id="btnPlayRecord" title="Começar a cantar (reproduz instrumental e grava voz)">
+                <span class="play-icon" id="playIcon">▶</span>
+                <span id="playRecordLabel">Começar a Cantar</span>
+              </button>
+            </div>
+
+            <div>
+              <button class="btn btn-secondary" id="btnFinishSinging" style="width: auto;">
+                Finalizar e Avaliar
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Indicador de Carregamento / Avaliação -->
+      <div class="loading-box" id="stageLoadingBox" style="max-width: 900px; margin: 20px auto 0 auto;">
+        <div class="loading-spinner"></div>
+        <div class="loading-text" id="stageLoadingText">Avaliando performance...</div>
+        <div class="loading-step" id="stageLoadingStep">Analisando afinação e ritmo da voz...</div>
+      </div>
+    </div>
+  </main>
 
   <!-- Modal de Pontuação da Performance -->
   <div class="modal-overlay" id="modalOverlay">
@@ -134,36 +119,29 @@
         </div>
         <div class="metric-card">
           <div class="metric-label">Latência Detectada</div>
-          <div class="metric-value" id="latencyValue" style="font-size: 1.1rem;">--</div>
+          <div class="metric-value" id="latencyValue" style="font-size: 15px;">--</div>
         </div>
         <div class="metric-card">
           <div class="metric-label">Desvio em Cents</div>
-          <div class="metric-value" id="centsErrorValue" style="font-size: 1.1rem;">--</div>
+          <div class="metric-value" id="centsErrorValue" style="font-size: 15px;">--</div>
         </div>
         <div class="metric-card">
           <div class="metric-label">Desvio Temporal</div>
-          <div class="metric-value" id="timingDevValue" style="font-size: 1.1rem;">--</div>
+          <div class="metric-value" id="timingDevValue" style="font-size: 15px;">--</div>
         </div>
-      </div>
-
-      <div class="pitch-canvas-wrapper">
-        <div style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 6px; text-align: left;">
-          Comparação Melódica: <span style="color: #3b82f6; font-weight: 600;">— Referência</span> vs <span style="color: #8b5cf6; font-weight: 600;">— Sua Voz</span>
-        </div>
-        <canvas id="pitchChartCanvas"></canvas>
       </div>
 
       <div class="modal-footer-btns">
         <button class="btn btn-secondary" id="btnRetryModal">
           Tentar Novamente
         </button>
-        <a href="/" class="btn btn-primary" id="btnBackToCatalogModal" style="text-decoration: none;">
+        <a href="/" class="btn btn-amber" id="btnBackToCatalogModal" style="text-decoration: none;">
           Voltar ao Catálogo
         </a>
       </div>
     </div>
   </div>
 
-  <script type="module" src="/static/web/js/sing.js?v=1.0.1"></script>
+  <script type="module" src="/static/web/js/sing.js?v=2.0.4"></script>
 </body>
 </html>
