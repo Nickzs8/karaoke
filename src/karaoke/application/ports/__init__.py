@@ -9,6 +9,7 @@ from karaoke.application.ports.audio_separator_port import (
     SeparatedTracks,
 )
 from karaoke.application.ports.audio_storage_port import AudioStoragePort
+from karaoke.application.ports.forced_aligner_port import ForcedAlignerPort
 from karaoke.application.ports.lyrics_provider_port import LyricsProviderPort
 from karaoke.application.ports.performance_scorer_port import PerformanceScorerPort
 from karaoke.application.ports.pitch_extractor_port import PitchExtractorPort
@@ -19,6 +20,7 @@ __all__ = [
     "AudioSeparatorPort",
     "AudioStoragePort",
     "DownloadedAudio",
+    "ForcedAlignerPort",
     "LyricsProviderPort",
     "PerformanceScorerPort",
     "PitchExtractorPort",

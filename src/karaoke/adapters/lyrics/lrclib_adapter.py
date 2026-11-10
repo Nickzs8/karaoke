@@ -160,18 +160,28 @@ class LrclibAdapter(LyricsProviderPort):
         clean_title = title.strip()
         # Remove parênteses e colchetes comuns com termos de vídeo ou álbuns
         video_tags_pattern = (
-            r"(?i)[\(\[\{](?:official|oficial|top of the pops|\d{4}|video"
-            r"|videoclipe|clipe|clip|lyric|letra|audio|álbum|album|cd|dvd"
-            r"|remaster|hd|4k|at last|live|ao vivo|ensaio|acústico|acoustic"
-            r"|deluxe|versão|version|visualizer|completo|full).*?[\)\]\}]"
+            r"(?i)[\(\[\{](?:official|oficial|top of the pops|\d{4}|video|vídeo"
+            r"|videoclipe|vídeoclipe|clipe|clip|webclipe|lyric|letra|com letra"
+            r"|legendado|audio|áudio|álbum|album|cd|dvd|remaster|hd|4k|at last"
+            r"|live|ao vivo|ensaio|acústico|acustico|acoustic|deluxe|versão|versao"
+            r"|version|visualizer|completo|full|voz e violão|voz e violao"
+            r"|roda de samba|pagode de mesa|lançamento|lancamento"
+            r"|inédita|inedita).*?[\)\]\}]"
         )
         clean_title = re.sub(video_tags_pattern, "", clean_title)
 
-        # Remove sufixos como '- At Last, the Video!' ou '- Official Audio'
+        # Remove sufixos como '- At Last, the Video!' ou '- Ao Vivo em São Paulo'
         suffix_pattern = (
-            r"(?i)\s*-\s*(?:at last|official|oficial|video|videoclipe"
-            r"|clipe|lyric|letra|audio|hd|live|ao vivo|remaster"
-            r"|visualizer|cd|dvd|album|álbum).*$"
+            r"(?i)\s*-\s*(?:at last|official|oficial|video|vídeo|videoclipe"
+            r"|vídeoclipe|clipe|clip|webclipe|lyric|lyrics|letra|com letra"
+            r"|legendado|audio|áudio|hd|4k|live|ao vivo|acústico|acustico"
+            r"|acoustic|ensaio|session|live session|voz e violão|voz e violao"
+            r"|só voz e violão|so voz e violao|roda de samba|pagode de mesa"
+            r"|versão|versao|version|lançamento|lancamento|música nova|musica nova"
+            r"|inédita|inedita|remaster|remasterizado|remasterizada|visualizer"
+            r"|cd|dvd|album|álbum|completo|completa|piseiro|forró|forro"
+            r"|sertanejo|pagode|samba|funk|brega funk|kondzilla|gr6|love funk"
+            r"|remix|extended|medley|pot-pourri|potpourri|pot pourri).*$"
         )
         clean_title = re.sub(suffix_pattern, "", clean_title)
 

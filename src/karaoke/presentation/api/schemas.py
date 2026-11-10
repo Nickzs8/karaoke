@@ -72,6 +72,16 @@ class SongCatalogItemResponse(BaseModel):
     )
 
 
+class LyricWordResponse(BaseModel):
+    """Palavra individual com tempos de início e fim sincronizados."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    text: str = Field(description="Texto da palavra.")
+    start_time: float = Field(description="Tempo de início da palavra em segundos.")
+    end_time: float = Field(description="Tempo de término da palavra em segundos.")
+
+
 class LyricLineResponse(BaseModel):
     """Verso sincronizado no tempo da letra da música."""
 
@@ -88,6 +98,10 @@ class LyricLineResponse(BaseModel):
     text: str = Field(
         description="Texto da letra cantada.",
         examples=["Is this the real life? Is this just fantasy?"],
+    )
+    words: list[LyricWordResponse] = Field(
+        default_factory=list,
+        description="Lista de palavras individuais sincronizadas do verso.",
     )
 
 

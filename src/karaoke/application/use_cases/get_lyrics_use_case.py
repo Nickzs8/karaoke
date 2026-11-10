@@ -6,12 +6,14 @@ from pathlib import Path
 
 from karaoke.application.ports import (
     AudioStoragePort,
+    ForcedAlignerPort,
     LyricsProviderPort,
     VocalOnsetDetectorPort,
 )
 from karaoke.domain import (
     LyricsLine,
     LyricsNotFoundError,
+    LyricWord,
     SongNotFoundError,
 )
 
@@ -33,17 +35,25 @@ class GetLyricsUseCase:
         storage: AudioStoragePort,
         onset_detector: VocalOnsetDetectorPort | None = None,
         lyrics_provider: LyricsProviderPort | None = None,
+        forced_aligner: ForcedAlignerPort | None = None,
     ) -> None:
         self.storage = storage
         self.onset_detector = onset_detector
         self.lyrics_provider = lyrics_provider
+        self.forced_aligner = forced_aligner
 
     def execute(self, song_id: str) -> tuple[LyricsLine, ...]:
         """Recupera e estrutura a letra sincronizada para a música indicada."""
         self._ensure_song_exists(song_id)
+
+        json_lines = self._read_json_lyrics_file(song_id)
+        if json_lines is not None:
+            return json_lines
+
         raw_lrc = self._read_lrc_file(song_id)
         if raw_lrc is not None:
-            return self._parse_lrc(raw_lrc)
+            lines = self._parse_lrc(raw_lrc)
+            return self._try_align_and_cache_json(song_id, lines)
 
         if self.lyrics_provider is not None:
             cached_lines = self._fetch_and_cache_lyrics(song_id)
@@ -124,6 +134,83 @@ class GetLyricsUseCase:
         lyrics_path = self.storage.get_path(lyrics_filename, "lyrics")
         return lyrics_path.read_text(encoding="utf-8")
 
+    def _read_json_lyrics_file(self, song_id: str) -> tuple[LyricsLine, ...] | None:
+        """Lê a letra estruturada com palavras em JSON caso já tenha sido alinhada."""
+        json_filename = f"{song_id}.json"
+        if not self.storage.file_exists(json_filename, "lyrics"):
+            return None
+        json_path = self.storage.get_path(json_filename, "lyrics")
+        try:
+            data = json.loads(json_path.read_text(encoding="utf-8"))
+            lines: list[LyricsLine] = []
+            for item in data:
+                words = tuple(
+                    LyricWord(
+                        text=w["text"],
+                        start_time=float(w["start_time"]),
+                        end_time=float(w["end_time"]),
+                    )
+                    for w in item.get("words", [])
+                )
+                lines.append(
+                    LyricsLine(
+                        start_time=float(item["start_time"]),
+                        end_time=float(item["end_time"]),
+                        text=str(item["text"]),
+                        words=words,
+                    )
+                )
+            return tuple(lines)
+        except Exception:
+            return None
+
+    def _try_align_and_cache_json(
+        self, song_id: str, lines: tuple[LyricsLine, ...]
+    ) -> tuple[LyricsLine, ...]:
+        """Tenta alinhar a letra lida do .lrc usando a faixa vocal e cacheia o JSON."""
+        if self.forced_aligner is None:
+            return lines
+
+        metadata = self._read_song_metadata(song_id)
+        if not metadata:
+            return lines
+
+        vocals_path = self._resolve_vocals_path(metadata)
+        if vocals_path is None or not vocals_path.is_file():
+            return lines
+
+        try:
+            aligned = self.forced_aligner.align_lyrics(vocals_path, lines)
+            self._save_json_lyrics(song_id, aligned)
+            return aligned
+        except Exception:
+            return lines
+
+    def _save_json_lyrics(self, song_id: str, lines: tuple[LyricsLine, ...]) -> None:
+        """Serializa os versos e palavras sincronizadas em JSON na pasta lyrics."""
+        payload = [
+            {
+                "start_time": line.start_time,
+                "end_time": line.end_time,
+                "text": line.text,
+                "words": [
+                    {
+                        "text": w.text,
+                        "start_time": w.start_time,
+                        "end_time": w.end_time,
+                    }
+                    for w in line.words
+                ],
+            }
+            for line in lines
+        ]
+        json_data = json.dumps(payload, ensure_ascii=False, indent=2).encode("utf-8")
+        self.storage.save_file(
+            file_data=json_data,
+            filename=f"{song_id}.json",
+            subfolder="lyrics",
+        )
+
     def _fetch_and_cache_lyrics(self, song_id: str) -> tuple[LyricsLine, ...]:
         """Tenta buscar a letra sob demanda pelo provedor e salva o arquivo .lrc."""
         if self.lyrics_provider is None:
@@ -148,7 +235,7 @@ class GetLyricsUseCase:
                     filename=f"{song_id}.lrc",
                     subfolder="lyrics",
                 )
-                return lines
+                return self._try_align_and_cache_json(song_id, lines)
         except Exception:
             return ()
 

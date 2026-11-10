@@ -55,3 +55,7 @@ class InvalidStoragePathError(DomainError):
 
 class AudioAnalysisError(DomainError):
     """Lançada quando ocorre uma falha durante análise de sinal de áudio."""
+
+
+class ForcedAlignmentError(DomainError):
+    """Lançada quando ocorre uma falha no alinhamento forçado de letra/áudio."""

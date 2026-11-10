@@ -8,6 +8,7 @@ import pytest
 from karaoke.adapters.audio import (
     DtwPerformanceScorerAdapter,
     LibrosaPitchExtractorAdapter,
+    MmsForcedAligner,
 )
 from karaoke.adapters.downloaders import YtDlpDownloaderAdapter
 from karaoke.adapters.lyrics import LrclibAdapter
@@ -169,6 +170,7 @@ class TestAppContainer:
         assert isinstance(container.lyrics_provider, LrclibAdapter)
         assert isinstance(container.pitch_extractor, LibrosaPitchExtractorAdapter)
         assert isinstance(container.scorer, DtwPerformanceScorerAdapter)
+        assert isinstance(container.forced_aligner, MmsForcedAligner)
 
         # 2. Casos de uso conectados
         assert isinstance(container.prepare_song, PrepareSongUseCase)

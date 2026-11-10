@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 
 from karaoke.domain.exceptions import InvalidLyricsTimeError
+from karaoke.domain.value_objects.lyric_word import LyricWord
 
 
 @dataclass(frozen=True)
@@ -12,6 +13,7 @@ class LyricsLine:
     start_time: float
     end_time: float
     text: str
+    words: tuple[LyricWord, ...] = ()
 
     def __post_init__(self) -> None:
         if self.start_time < 0.0:

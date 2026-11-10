@@ -4,6 +4,7 @@ from karaoke.adapters.audio import (
     DtwPerformanceScorerAdapter,
     EnergyVocalOnsetDetectorAdapter,
     LibrosaPitchExtractorAdapter,
+    MmsForcedAligner,
 )
 from karaoke.adapters.downloaders import YtDlpDownloaderAdapter
 from karaoke.adapters.lyrics import LrclibAdapter
@@ -45,6 +46,7 @@ class AppContainer:
             timing_weight=self.config.timing_weight,
             cents_tolerance=self.config.cents_tolerance,
         )
+        self.forced_aligner = MmsForcedAligner(device=self.config.device)
 
         # 2. Casos de Uso montados e prontos para uso
         self.prepare_song = PrepareSongUseCase(
@@ -52,6 +54,7 @@ class AppContainer:
             separator=self.separator,
             storage=self.storage,
             lyrics_provider=self.lyrics_provider,
+            forced_aligner=self.forced_aligner,
         )
         self.evaluate_performance = EvaluatePerformanceUseCase(
             storage=self.storage,
@@ -66,6 +69,7 @@ class AppContainer:
             storage=self.storage,
             onset_detector=self.onset_detector,
             lyrics_provider=self.lyrics_provider,
+            forced_aligner=self.forced_aligner,
         )
 
 

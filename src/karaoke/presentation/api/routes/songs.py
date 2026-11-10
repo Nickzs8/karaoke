@@ -14,6 +14,7 @@ from karaoke.presentation.api.dependencies import get_app_container
 from karaoke.presentation.api.schemas import (
     LyricLineResponse,
     LyricsResponse,
+    LyricWordResponse,
     PerformanceEvaluationResponse,
     SongCatalogItemResponse,
     SongPrepareRequest,
@@ -144,6 +145,14 @@ async def get_lyrics(
                 start_time=line.start_time,
                 end_time=line.end_time,
                 text=line.text,
+                words=[
+                    LyricWordResponse(
+                        text=w.text,
+                        start_time=w.start_time,
+                        end_time=w.end_time,
+                    )
+                    for w in line.words
+                ],
             )
             for line in lines
         ],

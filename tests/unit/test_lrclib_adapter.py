@@ -239,6 +239,39 @@ def test_sanitize_metadata_youtube_noise() -> None:
     assert title5 == "Você pra Sempre (Inveja)"
     assert artist5 == "Sandy e Junior"
 
+    # Testes com sufixos típicos de músicas brasileiras
+    t_aovivo, a_aovivo = adapter._sanitize_metadata(
+        "Chitãozinho & Xororó - Evidências - Ao Vivo em São Paulo",
+        "Chitãozinho e Xororó",
+    )
+    assert t_aovivo == "Evidências"
+    assert a_aovivo == "Chitãozinho e Xororó"
+
+    t_clipe, a_clipe = adapter._sanitize_metadata(
+        "Exaltasamba - Tá Vendo Aquela Lua - Clipe Oficial", "Exaltasamba"
+    )
+    assert t_clipe == "Tá Vendo Aquela Lua"
+
+    t_acustico, a_acustico = adapter._sanitize_metadata(
+        "Legião Urbana - Pais e Filhos - Acústico MTV", "Legião Urbana"
+    )
+    assert t_acustico == "Pais e Filhos"
+
+    t_vozviolao, a_vozviolao = adapter._sanitize_metadata(
+        "Djavan - Oceano - Voz e Violão", "Djavan"
+    )
+    assert t_vozviolao == "Oceano"
+
+    t_roda, a_roda = adapter._sanitize_metadata(
+        "Thiaguinho - Falta Você - Roda de Samba", "Thiaguinho"
+    )
+    assert t_roda == "Falta Você"
+
+    t_letra, a_letra = adapter._sanitize_metadata(
+        "Alceu Valença - Anunciação - Com Letra", "Alceu Valença"
+    )
+    assert t_letra == "Anunciação"
+
 
 def test_get_lyrics_with_youtube_metadata_finds_exact_match() -> None:
     def handler(request: httpx.Request) -> httpx.Response:

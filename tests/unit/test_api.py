@@ -10,6 +10,7 @@ from fastapi.testclient import TestClient
 from karaoke.domain import (
     LyricsLine,
     LyricsNotFoundError,
+    LyricWord,
     Score,
     ScoreResult,
     Song,
@@ -215,6 +216,33 @@ class TestGetLyricsEndpoint:
         assert data["lines"][0]["text"] == "Primeiro verso"
         assert data["lines"][0]["start_time"] == 1.0
         assert data["lines"][0]["end_time"] == 4.0
+        assert data["lines"][0]["words"] == []
+
+    def test_get_lyrics_with_words(
+        self, client: TestClient, mock_container: AppContainer
+    ) -> None:
+        w1 = LyricWord(text="Primeiro", start_time=1.0, end_time=2.0)
+        w2 = LyricWord(text="verso", start_time=2.1, end_time=4.0)
+        mock_lines = (
+            LyricsLine(
+                start_time=1.0,
+                end_time=4.0,
+                text="Primeiro verso",
+                words=(w1, w2),
+            ),
+        )
+        mock_container.get_lyrics.execute.return_value = mock_lines
+
+        response = client.get("/api/songs/song_123/lyrics")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["lines"]) == 1
+        assert len(data["lines"][0]["words"]) == 2
+        assert data["lines"][0]["words"][0]["text"] == "Primeiro"
+        assert data["lines"][0]["words"][0]["start_time"] == 1.0
+        assert data["lines"][0]["words"][0]["end_time"] == 2.0
+        assert data["lines"][0]["words"][1]["text"] == "verso"
 
     def test_get_lyrics_song_not_found(
         self, client: TestClient, mock_container: AppContainer

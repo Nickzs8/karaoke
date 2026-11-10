@@ -760,3 +760,30 @@ class TestGetLyricsUseCase:
         saved_text = saved_lrc_path.read_text(encoding="utf-8")
         assert "[00:18.48]She came without a farthing" in saved_text
         assert "[00:22.06]A babe without a name" in saved_text
+
+    def test_get_lyrics_loads_json_with_words(self, tmp_path: Path) -> None:
+        storage = FakeStorage(tmp_path)
+        storage.save_file(b'{"id": "song_words"}', "song_words.json", "processed")
+        json_lyrics = json.dumps(
+            [
+                {
+                    "start_time": 5.0,
+                    "end_time": 8.0,
+                    "text": "Hello world",
+                    "words": [
+                        {"text": "Hello", "start_time": 5.0, "end_time": 6.2},
+                        {"text": "world", "start_time": 6.5, "end_time": 8.0},
+                    ],
+                }
+            ]
+        )
+        storage.save_file(json_lyrics.encode("utf-8"), "song_words.json", "lyrics")
+        use_case = GetLyricsUseCase(storage=storage)
+        lines = use_case.execute("song_words")
+        assert len(lines) == 1
+        assert lines[0].text == "Hello world"
+        assert len(lines[0].words) == 2
+        assert lines[0].words[0].text == "Hello"
+        assert lines[0].words[0].start_time == 5.0
+        assert lines[0].words[1].text == "world"
+        assert lines[0].words[1].end_time == 8.0

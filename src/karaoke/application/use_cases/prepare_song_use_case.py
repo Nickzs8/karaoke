@@ -9,6 +9,7 @@ from karaoke.application.ports import (
     AudioSeparatorPort,
     AudioStoragePort,
     DownloadedAudio,
+    ForcedAlignerPort,
     LyricsProviderPort,
     SeparatedTracks,
 )
@@ -34,11 +35,13 @@ class PrepareSongUseCase:
         separator: AudioSeparatorPort,
         storage: AudioStoragePort,
         lyrics_provider: LyricsProviderPort,
+        forced_aligner: ForcedAlignerPort | None = None,
     ) -> None:
         self.downloader = downloader
         self.separator = separator
         self.storage = storage
         self.lyrics_provider = lyrics_provider
+        self.forced_aligner = forced_aligner
 
     def execute(
         self,
@@ -60,7 +63,9 @@ class PrepareSongUseCase:
 
         try:
             tracks = self._separate_audio_tracks(source_audio.file_path, song.id)
-            self._sync_and_save_lyrics(song.id, song.title, song.artist)
+            self._sync_and_save_lyrics(
+                song.id, song.title, song.artist, vocals_path=tracks.vocals_path
+            )
             song.mark_as_ready(
                 instrumental_path=tracks.instrumental_path,
                 vocals_path=tracks.vocals_path,
@@ -141,21 +146,65 @@ class PrepareSongUseCase:
         return self.separator.separate(audio_path, output_dir)
 
     def _sync_and_save_lyrics(
-        self, song_id: str, title: str, artist: str | None
+        self,
+        song_id: str,
+        title: str,
+        artist: str | None,
+        vocals_path: Path | None = None,
     ) -> None:
-        """Busca a letra sincronizada e salva o arquivo .lrc caso encontrada."""
+        """Busca a letra sincronizada, alinha via IA se possível e salva os dados."""
         try:
             lyrics_lines = self.lyrics_provider.get_lyrics(title=title, artist=artist)
-            if lyrics_lines:
-                lrc_content = self._format_lrc_content(lyrics_lines)
-                self.storage.save_file(
-                    file_data=lrc_content.encode("utf-8"),
-                    filename=f"{song_id}.lrc",
-                    subfolder="lyrics",
-                )
+            if not lyrics_lines:
+                return
+
+            if (
+                self.forced_aligner is not None
+                and vocals_path is not None
+                and vocals_path.exists()
+            ):
+                try:
+                    lyrics_lines = self.forced_aligner.align_lyrics(
+                        vocals_path, lyrics_lines
+                    )
+                except Exception:
+                    pass
+
+            lrc_content = self._format_lrc_content(lyrics_lines)
+            self.storage.save_file(
+                file_data=lrc_content.encode("utf-8"),
+                filename=f"{song_id}.lrc",
+                subfolder="lyrics",
+            )
+            self._save_json_lyrics(song_id, lyrics_lines)
         except Exception:
             # Letra é opcional; falha na busca não aborta a preparação da música
             pass
+
+    def _save_json_lyrics(self, song_id: str, lines: tuple[LyricsLine, ...]) -> None:
+        """Serializa e salva os versos com palavras sincronizadas em JSON."""
+        payload = [
+            {
+                "start_time": line.start_time,
+                "end_time": line.end_time,
+                "text": line.text,
+                "words": [
+                    {
+                        "text": w.text,
+                        "start_time": w.start_time,
+                        "end_time": w.end_time,
+                    }
+                    for w in line.words
+                ],
+            }
+            for line in lines
+        ]
+        json_data = json.dumps(payload, ensure_ascii=False, indent=2).encode("utf-8")
+        self.storage.save_file(
+            file_data=json_data,
+            filename=f"{song_id}.json",
+            subfolder="lyrics",
+        )
 
     def _format_lrc_content(self, lines: tuple[LyricsLine, ...]) -> str:
         """Converte uma sequência de LyricsLine para o formato padrão LRC."""

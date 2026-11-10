@@ -7,10 +7,12 @@ from pathlib import Path
 import pytest
 
 from karaoke.domain import (
+    ForcedAlignmentError,
     InvalidLyricsTimeError,
     InvalidPitchPointError,
     InvalidScoreError,
     LyricsLine,
+    LyricWord,
     Performance,
     PitchCurve,
     PitchPoint,
@@ -50,6 +52,20 @@ class TestLyricsLineValueObject:
         assert line.start_time == 1.5
         assert line.end_time == 4.2
         assert line.text == "Don't stop believin'"
+        assert line.words == ()
+
+    def test_lyrics_line_with_words(self) -> None:
+        w1 = LyricWord(text="Don't", start_time=1.5, end_time=2.0)
+        w2 = LyricWord(text="stop", start_time=2.1, end_time=3.0)
+        line = LyricsLine(
+            start_time=1.5,
+            end_time=4.2,
+            text="Don't stop",
+            words=(w1, w2),
+        )
+        assert len(line.words) == 2
+        assert line.words[0].text == "Don't"
+        assert line.words[1].text == "stop"
 
     def test_negative_start_time_raises_exception(self) -> None:
         with pytest.raises(InvalidLyricsTimeError):
@@ -58,6 +74,26 @@ class TestLyricsLineValueObject:
     def test_start_greater_than_end_raises_exception(self) -> None:
         with pytest.raises(InvalidLyricsTimeError):
             LyricsLine(start_time=5.0, end_time=2.0, text="Invalid order")
+
+
+class TestLyricWordValueObject:
+    def test_valid_lyric_word(self) -> None:
+        word = LyricWord(text="hello", start_time=1.0, end_time=1.8)
+        assert word.text == "hello"
+        assert word.start_time == 1.0
+        assert word.end_time == 1.8
+
+    def test_negative_start_time_raises_exception(self) -> None:
+        with pytest.raises(InvalidLyricsTimeError):
+            LyricWord(text="bad", start_time=-0.5, end_time=1.0)
+
+    def test_start_greater_than_end_raises_exception(self) -> None:
+        with pytest.raises(InvalidLyricsTimeError):
+            LyricWord(text="bad", start_time=2.0, end_time=1.5)
+
+    def test_forced_alignment_error_is_domain_error(self) -> None:
+        err = ForcedAlignmentError("Falha de alinhamento")
+        assert isinstance(err, Exception)
 
 
 class TestPitchCurveValueObjects:
