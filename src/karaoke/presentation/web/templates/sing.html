@@ -7,49 +7,51 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400..800;1,14..32,400..800&family=Inter+Tight:ital,wght@0,700;0,800;1,700;1,800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/web/css/styles.css?v=2.0.7">
+  <link rel="stylesheet" href="/static/web/css/styles.css?v=2.2.3">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23e57cd8%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z%22/><path d=%22M19 10v2a7 7 0 0 1-14 0v-2%22/><line x1=%2212%22 x2=%2212%22 y1=%2219%22 y2=%2222%22/></svg>">
 </head>
 <body class="page-sing">
-  <!-- Hero Stage (Banda Escura Plum #2c1338) -->
-  <header class="hero-stage hero-stage-sing">
-    <div class="hero-top-nav">
-      <a href="/" class="btn-back" id="btnBack">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="19" y1="12" x2="5" y2="12"></line>
-          <polyline points="12 19 5 12 12 5"></polyline>
-        </svg>
-        Voltar ao Catálogo
-      </a>
-    </div>
-
-    <div class="stage-song-banner">
-      <h1 class="stage-song-title" id="currentSongTitle">Carregando música...</h1>
-      <div class="stage-song-artist" id="currentSongArtist">Aguarde...</div>
-    </div>
-  </header>
-
-  <!-- Palco de Performance (Superfície Bone #fefbfa) -->
+  <!-- Palco de Performance -->
   <main class="content-canvas content-canvas-sing">
     <div class="content-container">
-      <div class="stage-card-wrapper card" id="stageContainer">
+      <!-- Navegação Superior -->
+      <header class="hero-top-nav">
+        <a href="/" class="btn-back" id="btnBack">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="19" y1="12" x2="5" y2="12"></line>
+            <polyline points="12 19 5 12 12 5"></polyline>
+          </svg>
+          Voltar ao catálogo
+        </a>
+        <div class="brand-wordmark">Karaokê</div>
+        <div class="nav-spacer" aria-hidden="true"></div>
+      </header>
+      <!-- Linha do Cabeçalho da Música + Sincronia -->
+      <div class="stage-song-row">
+        <div class="stage-song-banner">
+          <h1 class="stage-song-title" id="currentSongTitle">Carregando música...</h1>
+          <div class="stage-song-artist" id="currentSongArtist">Aguarde...</div>
+        </div>
+
         <!-- Barra de Controle de Sincronia da Letra -->
         <div class="sync-bar" id="syncBar">
           <div class="sync-info">
-            <span class="sync-title">Sincronia da Letra</span>
+            <span class="sync-title">Sincronia da letra</span>
             <span class="sync-subtitle">Compense introduções ou silêncio inicial</span>
           </div>
           <div class="sync-controls">
-            <button type="button" class="btn-sync-step" id="btnSyncMinusLarge" title="Adiantar 1 segundo (-1.0s)">-1.0s</button>
-            <button type="button" class="btn-sync-step" id="btnSyncMinusSmall" title="Adiantar 0.2 segundos (-0.2s)">-0.2s</button>
-            <div class="sync-display-pill" id="syncValueDisplay" title="Offset atual da letra">+0.0s</div>
-            <button type="button" class="btn-sync-step" id="btnSyncPlusSmall" title="Atrasar 0.2 segundos (+0.2s)">+0.2s</button>
-            <button type="button" class="btn-sync-step" id="btnSyncPlusLarge" title="Atrasar 1 segundo (+1.0s)">+1.0s</button>
-            <button type="button" class="btn-sync-reset" id="btnSyncReset" title="Zerar ajuste de sincronia">Zerar</button>
+            <button type="button" class="btn-sync-step" id="btnSyncMinusLarge" title="Adiantar 1 segundo (-1.0s)">-1,0s</button>
+            <button type="button" class="btn-sync-step" id="btnSyncMinusSmall" title="Adiantar 0.2 segundos (-0.2s)">-0,2s</button>
+            <div class="sync-display-pill" id="syncValueDisplay" title="Offset atual da letra">0,0s</div>
+            <button type="button" class="btn-sync-step" id="btnSyncPlusSmall" title="Atrasar 0.2 segundos (+0.2s)">+0,2s</button>
+            <button type="button" class="btn-sync-step" id="btnSyncPlusLarge" title="Atrasar 1 segundo (+1.0s)">+1,0s</button>
+            <button type="button" class="btn-sync-reset" id="btnSyncReset" title="Zerar ajuste de sincronia" style="display: none;">Zerar</button>
             <button type="button" class="btn-sync-auto" id="btnSyncAuto" style="display: none;" title="Aplicar offset detectado automaticamente">Auto</button>
           </div>
         </div>
+      </div>
 
+      <div class="stage-card-wrapper card" id="stageContainer">
         <!-- Caixa de Letras Sincronizadas (Teleprompter) -->
         <div class="lyrics-box" id="lyricsBox">
           <div class="empty-state">Carregando letra sincronizada...</div>
@@ -67,16 +69,15 @@
 
           <div class="action-row">
             <div>
-              <!-- Botão Unificado: Tocar e Gravar Voz Simultaneamente (Padrão Amber) -->
               <button class="btn btn-play-record" id="btnPlayRecord" title="Começar a cantar (reproduz instrumental e grava voz)">
                 <span class="play-icon" id="playIcon">▶</span>
-                <span id="playRecordLabel">Começar a Cantar</span>
+                <span id="playRecordLabel">Começar a cantar</span>
               </button>
             </div>
 
             <div>
-              <button class="btn btn-secondary" id="btnFinishSinging" style="width: auto;">
-                Finalizar e Avaliar
+              <button class="btn btn-secondary btn-finish-singing" id="btnFinishSinging">
+                Finalizar e avaliar
               </button>
             </div>
           </div>
@@ -95,53 +96,57 @@
   <!-- Modal de Pontuação da Performance -->
   <div class="modal-overlay" id="modalOverlay">
     <div class="score-modal">
-      <div class="modal-header-tag">Resultado da Avaliação</div>
-      <h2>Pontuação da Performance</h2>
+      <div class="score-modal-hero">
+        <div class="modal-header-tag">Resultado da Avaliação</div>
+        <h2 id="modalSongTitle">Pontuação da Performance</h2>
 
-      <div class="score-circle-wrapper">
-        <div class="score-number" id="scoreNumber">--</div>
+        <div class="score-circle-wrapper">
+          <div class="score-number" id="scoreNumber">--</div>
+        </div>
+
+        <div class="score-rating" id="scoreRating">Avaliando...</div>
       </div>
 
-      <div class="score-rating" id="scoreRating">Avaliando...</div>
+      <div class="score-modal-body">
+        <div class="metrics-grid">
+          <div class="metric-card" id="cardPitch">
+            <div class="metric-label">Afinação Melódica</div>
+            <div class="metric-value" id="pitchScoreValue">--%</div>
+          </div>
+          <div class="metric-card" id="cardTiming">
+            <div class="metric-label">Precisão Rítmica</div>
+            <div class="metric-value" id="timingScoreValue">--%</div>
+          </div>
+          <div class="metric-card" id="cardCoverage">
+            <div class="metric-label">Cobertura Vocal</div>
+            <div class="metric-value" id="coverageValue">--%</div>
+          </div>
+          <div class="metric-card" id="cardLatency">
+            <div class="metric-label">Latência Detectada</div>
+            <div class="metric-value" id="latencyValue">--</div>
+          </div>
+          <div class="metric-card" id="cardCents">
+            <div class="metric-label">Desvio em Cents</div>
+            <div class="metric-value" id="centsErrorValue">--</div>
+          </div>
+          <div class="metric-card" id="cardTimingDev">
+            <div class="metric-label">Desvio Temporal</div>
+            <div class="metric-value" id="timingDevValue">--</div>
+          </div>
+        </div>
 
-      <div class="metrics-grid">
-        <div class="metric-card">
-          <div class="metric-label">Afinação Melódica</div>
-          <div class="metric-value" id="pitchScoreValue">--%</div>
+        <div class="modal-footer-btns">
+          <button class="btn btn-secondary" id="btnRetryModal">
+            Tentar novamente
+          </button>
+          <a href="/" class="btn btn-amber" id="btnBackToCatalogModal">
+            Voltar ao catálogo
+          </a>
         </div>
-        <div class="metric-card">
-          <div class="metric-label">Precisão Rítmica</div>
-          <div class="metric-value" id="timingScoreValue">--%</div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-label">Cobertura Vocal</div>
-          <div class="metric-value" id="coverageValue">--%</div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-label">Latência Detectada</div>
-          <div class="metric-value" id="latencyValue" style="font-size: 15px;">--</div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-label">Desvio em Cents</div>
-          <div class="metric-value" id="centsErrorValue" style="font-size: 15px;">--</div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-label">Desvio Temporal</div>
-          <div class="metric-value" id="timingDevValue" style="font-size: 15px;">--</div>
-        </div>
-      </div>
-
-      <div class="modal-footer-btns">
-        <button class="btn btn-secondary" id="btnRetryModal">
-          Tentar Novamente
-        </button>
-        <a href="/" class="btn btn-amber" id="btnBackToCatalogModal" style="text-decoration: none;">
-          Voltar ao Catálogo
-        </a>
       </div>
     </div>
   </div>
 
-  <script type="module" src="/static/web/js/sing.js?v=2.0.6"></script>
+  <script type="module" src="/static/web/js/sing.js?v=2.2.0"></script>
 </body>
 </html>

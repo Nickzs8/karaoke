@@ -57,6 +57,7 @@ const dom = {
 
   // Modal de Pontuação
   modalOverlay: document.getElementById("modalOverlay"),
+  modalSongTitle: document.getElementById("modalSongTitle"),
   scoreNumber: document.getElementById("scoreNumber"),
   scoreRating: document.getElementById("scoreRating"),
   pitchScoreValue: document.getElementById("pitchScoreValue"),
@@ -371,12 +372,14 @@ function setupSyncControls() {
 
 function updateSyncDisplay(offset, autoOffset) {
   const sign = offset > 0 ? "+" : "";
-  dom.syncValueDisplay.textContent = `${sign}${offset.toFixed(1)}s`;
+  const formatted = offset.toFixed(1).replace(".", ",");
+  dom.syncValueDisplay.textContent = `${sign}${formatted}s`;
 
   if (autoOffset && Math.abs(autoOffset) >= 0.2) {
     dom.btnSyncAuto.style.display = "inline-block";
     const autoSign = autoOffset > 0 ? "+" : "";
-    dom.btnSyncAuto.textContent = `Auto (${autoSign}${autoOffset.toFixed(1)}s)`;
+    const autoFormatted = autoOffset.toFixed(1).replace(".", ",");
+    dom.btnSyncAuto.textContent = `Auto (${autoSign}${autoFormatted}s)`;
   } else {
     dom.btnSyncAuto.style.display = "none";
   }
@@ -552,14 +555,39 @@ function setupModalEvents() {
 }
 
 function showScoreModal(score) {
-  dom.scoreNumber.textContent = Math.round(score.total_score);
-  dom.pitchScoreValue.textContent = `${score.pitch_score.toFixed(1)}%`;
-  dom.timingScoreValue.textContent = `${score.timing_score.toFixed(1)}%`;
-
-  const coverage = score.details?.coverage_ratio ?? 100;
-  if (dom.coverageValue) {
-    dom.coverageValue.textContent = `${coverage.toFixed(1)}%`;
+  if (dom.modalSongTitle) {
+    dom.modalSongTitle.textContent = currentSong
+      ? `${currentSong.title} · ${currentSong.artist}`
+      : "Pontuação da Performance";
   }
+
+  dom.scoreNumber.textContent = Math.round(score.total_score);
+
+  const pitchPct = score.pitch_score ?? 0;
+  const timingPct = score.timing_score ?? 0;
+  const coverage = score.details?.coverage_ratio ?? 100;
+
+  dom.pitchScoreValue.textContent = `${pitchPct.toFixed(1).replace(".", ",")}%`;
+  dom.timingScoreValue.textContent = `${timingPct.toFixed(1).replace(".", ",")}%`;
+
+  if (dom.coverageValue) {
+    const covFormatted = Number.isInteger(coverage) ? `${coverage}%` : `${coverage.toFixed(1).replace(".", ",")}%`;
+    dom.coverageValue.textContent = covFormatted;
+  }
+
+  // Define porcentagens nos cards com barras de progresso
+  document.getElementById("cardPitch")?.style.setProperty(
+    "--metric-pct",
+    `${Math.min(100, Math.max(0, pitchPct))}%`
+  );
+  document.getElementById("cardTiming")?.style.setProperty(
+    "--metric-pct",
+    `${Math.min(100, Math.max(0, timingPct))}%`
+  );
+  document.getElementById("cardCoverage")?.style.setProperty(
+    "--metric-pct",
+    `${Math.min(100, Math.max(0, coverage))}%`
+  );
 
   const latency = score.details?.global_latency_seconds ?? 0;
   if (dom.latencyValue) {
@@ -573,22 +601,18 @@ function showScoreModal(score) {
     0;
   const timingDev = score.details?.mean_timing_deviation_seconds ?? 0;
 
-  dom.centsErrorValue.textContent = `${meanCents.toFixed(1)} cents`;
-  dom.timingDevValue.textContent = `${timingDev.toFixed(2)}s`;
+  dom.centsErrorValue.textContent = `${meanCents.toFixed(1).replace(".", ",")} cents`;
+  dom.timingDevValue.textContent = `${timingDev.toFixed(2).replace(".", ",")}s`;
 
-  // Classificação da pontuação com paleta Toggl Track
+  // Classificação da pontuação com destaque em magenta
   if (score.total_score >= 85) {
-    dom.scoreRating.textContent = "Excelente! Performance de alto nível";
-    dom.scoreRating.style.color = "var(--color-magenta)";
+    dom.scoreRating.innerHTML = 'Excelente! Performance de <em class="rating-highlight">alto</em> nível';
   } else if (score.total_score >= 70) {
-    dom.scoreRating.textContent = "Muito Bom! Ótima afinação e ritmo";
-    dom.scoreRating.style.color = "var(--color-amber)";
+    dom.scoreRating.innerHTML = 'Muito Bom! Ótima afinação e <em class="rating-highlight">ritmo</em>';
   } else if (score.total_score >= 50) {
-    dom.scoreRating.textContent = "Satisfatório! Dentro da média esperada";
-    dom.scoreRating.style.color = "var(--color-heather)";
+    dom.scoreRating.innerHTML = 'Satisfatório! Dentro da média esperada';
   } else {
-    dom.scoreRating.textContent = "Abaixo da média. Pratique mais!";
-    dom.scoreRating.style.color = "#dc2626";
+    dom.scoreRating.innerHTML = 'Abaixo da média. Pratique mais!';
   }
 
   dom.modalOverlay.classList.add("active");
