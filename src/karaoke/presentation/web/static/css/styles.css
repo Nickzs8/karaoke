@@ -730,32 +730,86 @@ body {
 }
 
 .lyric-line {
-  font-size: 16px;
+  font-size: 17px;
+  line-height: 1.6;
   padding: 8px 16px;
-  margin: 4px 0;
+  margin: 6px 0;
   color: var(--color-fog);
-  transition: color 0.15s ease, background-color 0.15s ease;
-  border-radius: 8px;
+  transition: font-size 0.2s cubic-bezier(0.2, 0, 0, 1),
+              background-color 0.2s ease,
+              color 0.2s ease,
+              opacity 0.2s ease,
+              transform 0.2s ease;
+  border-radius: 10px;
   cursor: pointer;
   user-select: none;
 }
 
 .lyric-line:hover:not(.active) {
   color: var(--color-bone);
-  background: rgba(254, 251, 250, 0.05);
+  background: rgba(254, 251, 250, 0.06);
 }
 
 .lyric-line.active {
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 700;
-  color: var(--color-bone);
-  background: rgba(229, 124, 216, 0.15);
-  border-radius: 8px;
+  color: rgba(254, 251, 250, 0.45);
+  background: rgba(229, 124, 216, 0.14);
+  border: 1px solid rgba(229, 124, 216, 0.28);
+  box-shadow: 0 4px 24px rgba(44, 19, 56, 0.45);
+  border-radius: 10px;
 }
 
 .lyric-line.past {
   color: var(--color-dusty-mauve);
-  opacity: 0.6;
+  opacity: 0.55;
+}
+
+/* Rastreamento de Palavra / Sílaba (Word-Level Timing) */
+.lyric-word {
+  display: inline-block;
+  position: relative;
+  transition: color 0.2s ease;
+}
+
+/* Palavras em versos ainda não cantados */
+.lyric-line:not(.active):not(.past) .lyric-word {
+  color: inherit;
+}
+
+/* Palavras no verso ativo que ainda serão cantadas */
+.lyric-line.active .lyric-word.word-future {
+  color: rgba(254, 251, 250, 0.42);
+}
+
+/* Palavras já cantadas no verso ativo */
+.lyric-line.active .lyric-word.word-past {
+  color: var(--color-amber);
+}
+
+/* Sílaba / Palavra cantada no exato momento */
+.lyric-line.active .lyric-word.word-active {
+  background: linear-gradient(
+    to right,
+    var(--color-amber) 0%,
+    var(--color-amber) var(--word-progress, 0%),
+    rgba(254, 251, 250, 0.42) var(--word-progress, 0%),
+    rgba(254, 251, 250, 0.42) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+@media (max-width: 600px) {
+  .lyric-line {
+    font-size: 15px;
+    padding: 6px 12px;
+  }
+  .lyric-line.active {
+    font-size: 19px;
+  }
 }
 
 /* Player Controls */

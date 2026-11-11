@@ -93,3 +93,53 @@ class TestMmsForcedAligner:
             res = aligner_adapter._align_single_line(line, tmp_path / "dummy.wav")
             assert res == line
             assert res.words == ()
+
+    def test_constrain_word_durations_caps_stretched_last_word(
+        self, aligner_adapter: MmsForcedAligner
+    ) -> None:
+        words = [
+            LyricWord(text="All", start_time=10.0, end_time=10.4),
+            LyricWord(text="dead", start_time=10.5, end_time=11.2),
+            LyricWord(text="and", start_time=11.3, end_time=11.6),
+            LyricWord(text="gone", start_time=11.7, end_time=39.95),  # 28.25s esticado
+        ]
+        constrained = aligner_adapter._constrain_word_durations(words)
+
+        assert len(constrained) == 4
+        assert constrained[0].end_time == 10.4
+        assert constrained[1].end_time == 11.2
+        assert constrained[2].end_time == 11.6
+        # A última palavra deve ser limitada a <= 3.8s
+        last_dur = constrained[3].end_time - constrained[3].start_time
+        assert last_dur <= 3.8
+        assert constrained[3].end_time < 16.0
+
+    def test_constrain_word_durations_preserves_normal_durations(
+        self, aligner_adapter: MmsForcedAligner
+    ) -> None:
+        words = [
+            LyricWord(text="Hello", start_time=1.0, end_time=1.5),
+            LyricWord(text="world", start_time=1.6, end_time=2.4),
+        ]
+        constrained = aligner_adapter._constrain_word_durations(words)
+
+        assert len(constrained) == 2
+        assert constrained[0].end_time == 1.5
+        assert constrained[1].end_time == 2.4
+
+    def test_align_single_line_caps_audio_slice_end_time(
+        self, aligner_adapter: MmsForcedAligner, tmp_path: Path
+    ) -> None:
+        line = LyricsLine(start_time=10.0, end_time=50.0, text="one two three")
+        with (
+            patch.object(aligner_adapter, "_tokenizer"),
+            patch.object(
+                aligner_adapter, "_load_audio_slice", return_value=(10.0, None)
+            ) as mock_load,
+        ):
+            aligner_adapter._align_single_line(line, tmp_path / "dummy.wav")
+            assert mock_load.called
+            _, kwargs = mock_load.call_args
+            # O slice end deve ter sido limitado e não ser 50.0
+            assert kwargs["end_time"] < 50.0
+            assert kwargs["end_time"] <= 10.0 + max(6.0, 3 * 2.0)

@@ -3,7 +3,7 @@
  */
 
 import { api } from "./api.js?v=2.0.0";
-import { AudioPlayer } from "./audio-player.js?v=2.0.0";
+import { AudioPlayer } from "./audio-player.js?v=2.0.1";
 import { VoiceRecorder } from "./recorder.js?v=2.0.0";
 
 // Instâncias Globais
@@ -15,6 +15,7 @@ let currentLyrics = [];
 let isEvaluating = false;
 let currentOffset = 0.0;
 let autoEstimatedOffset = 0.0;
+let activeLineWordElements = [];
 
 // Elementos do DOM
 const dom = {
@@ -163,11 +164,97 @@ async function loadCurrentSongFromUrl() {
 }
 
 // ==========================================================================
-// 2. Renderização de Letras Sincronizadas
+// 2. Renderização de Letras Sincronizadas e Rastreamento de Palavras
 // ==========================================================================
+
+/**
+ * Extrai e normaliza a lista de palavras/sílabas sincronizadas de um verso.
+ * Aplica ancoragem temporal inteligente: se as palavras alinhadas divergirem do início do verso (especificação LRC),
+ * calibra o início da frase para coincidir com line.start_time, preservando os ritmos e durações relativas de cada sílaba.
+ * Elimina atrasos artificiais do aligner e fecha micro-lacunas para evitar interrupções bruscas do glow.
+ * @param {Object} line
+ * @returns {Array<{text: string, start_time: number, end_time: number}>}
+ */
+function getLineWords(line) {
+  const lineStart = typeof line.start_time === "number" ? line.start_time : 0;
+  const lineEnd = typeof line.end_time === "number" ? line.end_time : lineStart + 2;
+  const lineDuration = Math.max(0.1, lineEnd - lineStart);
+
+  if (line.words && Array.isArray(line.words) && line.words.length > 0) {
+    const rawWords = line.words;
+    const w0Start = typeof rawWords[0].start_time === "number" ? rawWords[0].start_time : lineStart;
+
+    // Ancoragem temporal no início do verso (padrão LRC):
+    // O timestamp do verso marca o início da primeira sílaba cantada.
+    // Se o alinhamento da IA começou com atraso ou avanço, sincronizamos o início com lineStart.
+    const anchorShift = w0Start - lineStart;
+
+    const words = rawWords.map((w) => {
+      const origStart = typeof w.start_time === "number" ? w.start_time : lineStart;
+      const origEnd = typeof w.end_time === "number" ? w.end_time : origStart + 0.2;
+      const adjustedStart = Number((origStart - anchorShift).toFixed(3));
+      const adjustedEnd = Number((origEnd - anchorShift).toFixed(3));
+      const validStart = Math.max(lineStart, adjustedStart);
+      const validEnd = Math.max(validStart + 0.05, adjustedEnd);
+
+      return {
+        text: w.text,
+        start_time: validStart,
+        end_time: validEnd,
+      };
+    });
+
+    // Fechamento de micro-lacunas (< 0.20s) entre palavras para evitar flickering do glow no meio de frases
+    for (let j = 0; j < words.length - 1; j++) {
+      const gap = words[j + 1].start_time - words[j].end_time;
+      if (gap > 0 && gap <= 0.20) {
+        words[j].end_time = words[j + 1].start_time;
+      }
+    }
+
+    // Limitação de sustentação anômala na última palavra antes de pausas/solos instrumentais
+    if (words.length > 0) {
+      const lastIndex = words.length - 1;
+      const lastWord = words[lastIndex];
+      const lastDuration = lastWord.end_time - lastWord.start_time;
+
+      let refDuration = 0.6;
+      if (words.length > 1) {
+        const sumPrev = words
+          .slice(0, lastIndex)
+          .reduce((acc, w) => acc + (w.end_time - w.start_time), 0);
+        refDuration = sumPrev / lastIndex;
+      }
+
+      // Impede que a última palavra se estenda durante o solo/pausa posterior
+      const maxAllowedDuration = Math.min(3.8, Math.max(3.0, refDuration * 3.5));
+      if (lastDuration > maxAllowedDuration) {
+        lastWord.end_time = Number((lastWord.start_time + maxAllowedDuration).toFixed(3));
+      }
+    }
+
+    return words;
+  }
+
+  // Fallback para linhas sem palavras pré-alinhadas
+  const rawWords = (line.text || "").trim().split(/\s+/).filter(Boolean);
+  if (rawWords.length === 0) return [];
+
+  // Se o verso for seguido por pausa instrumental longa, limita a duração para um ritmo vocal natural (~0.55s por palavra)
+  const maxPhraseDuration = Math.max(1.5, rawWords.length * 0.55);
+  const effectiveDuration = Math.min(lineDuration, maxPhraseDuration);
+  const wordDur = effectiveDuration / rawWords.length;
+
+  return rawWords.map((wordText, idx) => ({
+    text: wordText,
+    start_time: Number((lineStart + idx * wordDur).toFixed(3)),
+    end_time: Number((lineStart + (idx + 1) * wordDur).toFixed(3)),
+  }));
+}
 
 function renderLyrics(lines) {
   dom.lyricsBox.innerHTML = "";
+  activeLineWordElements = [];
 
   if (!lines || lines.length === 0) {
     dom.lyricsBox.innerHTML = `
@@ -179,14 +266,30 @@ function renderLyrics(lines) {
     return;
   }
 
-  lines.forEach((line, index) => {
+  lines.forEach((line, lineIndex) => {
     const div = document.createElement("div");
     div.className = "lyric-line";
-    div.id = `line-${index}`;
-    div.dataset.index = index;
+    div.id = `line-${lineIndex}`;
+    div.dataset.index = lineIndex;
     div.dataset.startTime = line.start_time;
     div.title = "Clique para saltar o playback para este verso";
-    div.textContent = line.text;
+
+    const words = getLineWords(line);
+    line._computedWords = words;
+
+    words.forEach((word, wordIndex) => {
+      const span = document.createElement("span");
+      span.className = "lyric-word word-future";
+      span.id = `word-${lineIndex}-${wordIndex}`;
+      span.dataset.start = word.start_time;
+      span.dataset.end = word.end_time;
+      span.textContent = word.text;
+      div.appendChild(span);
+
+      if (wordIndex < words.length - 1) {
+        div.appendChild(document.createTextNode(" "));
+      }
+    });
 
     div.addEventListener("click", () => {
       const targetTime = Math.max(0, line.start_time + player.getLyricsOffset());
@@ -195,6 +298,44 @@ function renderLyrics(lines) {
 
     dom.lyricsBox.appendChild(div);
   });
+}
+
+/**
+ * Atualiza o preenchimento visual contínuo da palavra/sílaba na linha ativa.
+ * Calcula (effectiveTime - start) / (end - start) e aplica gradiente no tempo exato da sustentação vocal.
+ * @param {number} effectiveTime Tempo de reprodução ajustado pelo offset
+ */
+function updateActiveWords(effectiveTime) {
+  if (activeLineWordElements.length === 0) return;
+
+  for (let k = 0; k < activeLineWordElements.length; k++) {
+    const item = activeLineWordElements[k];
+    const el = item.el;
+    if (!el) continue;
+
+    const start = item.word.start_time;
+    const end = item.word.end_time;
+
+    if (effectiveTime < start) {
+      if (!el.classList.contains("word-future")) {
+        el.className = "lyric-word word-future";
+        el.style.removeProperty("--word-progress");
+      }
+    } else if (effectiveTime >= end) {
+      if (!el.classList.contains("word-past")) {
+        el.className = "lyric-word word-past";
+        el.style.setProperty("--word-progress", "100%");
+      }
+    } else {
+      // Sílaba cantada no exato momento!
+      const duration = Math.max(0.04, end - start);
+      const progress = Math.min(100, Math.max(0, ((effectiveTime - start) / duration) * 100));
+      if (!el.classList.contains("word-active")) {
+        el.className = "lyric-word word-active";
+      }
+      el.style.setProperty("--word-progress", `${progress.toFixed(1)}%`);
+    }
+  }
 }
 
 // ==========================================================================
@@ -300,19 +441,46 @@ function setupPlayerCallbacks() {
   player.onLineChange = (line, index) => {
     document.querySelectorAll(".lyric-line").forEach((el, i) => {
       el.classList.remove("active");
-      if (index >= 0 && i < index) el.classList.add("past");
-      else el.classList.remove("past");
+      if (index >= 0 && i < index) {
+        el.classList.add("past");
+        el.querySelectorAll(".lyric-word").forEach((w) => {
+          w.className = "lyric-word word-past";
+          w.style.setProperty("--word-progress", "100%");
+        });
+      } else if (index >= 0 && i > index) {
+        el.classList.remove("past");
+        el.querySelectorAll(".lyric-word").forEach((w) => {
+          w.className = "lyric-word word-future";
+          w.style.removeProperty("--word-progress");
+        });
+      } else {
+        el.classList.remove("past");
+      }
     });
 
-    if (index >= 0) {
+    if (index >= 0 && currentLyrics[index]) {
       const activeEl = document.getElementById(`line-${index}`);
       if (activeEl) {
         activeEl.classList.add("active");
         activeEl.scrollIntoView({ behavior: "smooth", block: "center" });
       }
+
+      const words = currentLyrics[index]._computedWords || [];
+      activeLineWordElements = words.map((w, wIdx) => ({
+        word: w,
+        el: document.getElementById(`word-${index}-${wIdx}`),
+      }));
+
+      const effectiveTime = player.getCurrentTime() - player.getLyricsOffset();
+      updateActiveWords(effectiveTime);
     } else {
+      activeLineWordElements = [];
       dom.lyricsBox.scrollTo({ top: 0, behavior: "smooth" });
     }
+  };
+
+  player.onHighResTimeUpdate = (currentTime, effectiveTime) => {
+    updateActiveWords(effectiveTime);
   };
 
   player.onPlay = () => setControlState(true);

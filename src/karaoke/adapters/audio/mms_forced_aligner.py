@@ -5,6 +5,7 @@ import re
 import unicodedata
 from collections.abc import Sequence
 from pathlib import Path
+from typing import Any
 
 import soundfile as sf
 import torch
@@ -65,10 +66,16 @@ class MmsForcedAligner(ForcedAlignerPort):
                 return line
 
             tokens = self._tokenizer([pair[1] for pair in word_pairs])
+
+            # Limita a fatia de áudio para o limite razoável do verso cantado,
+            # impedindo que dezenas de segundos de solos ou silêncio entrem no aligner
+            expected_max_duration = max(6.0, len(word_pairs) * 2.0)
+            capped_end_time = min(line.end_time, line.start_time + expected_max_duration)
+
             chunk_start, chunk_waveform = self._load_audio_slice(
                 audio_path=audio_path,
                 start_time=line.start_time,
-                end_time=line.end_time,
+                end_time=capped_end_time,
             )
 
             if chunk_waveform is None or chunk_waveform.shape[1] == 0:
@@ -179,8 +186,23 @@ class MmsForcedAligner(ForcedAlignerPort):
             return []
 
         frame_duration = waveform.shape[1] / num_frames / target_sr
-        lyric_words: list[LyricWord] = []
+        raw_words = self._extract_raw_spans(
+            word_pairs=word_pairs,
+            token_spans=token_spans,
+            chunk_start=chunk_start,
+            frame_duration=frame_duration,
+        )
+        return self._constrain_word_durations(raw_words)
 
+    def _extract_raw_spans(
+        self,
+        word_pairs: list[tuple[str, str]],
+        token_spans: Any,
+        chunk_start: float,
+        frame_duration: float,
+    ) -> list[LyricWord]:
+        """Extrai LyricWord com timestamps brutos a partir dos spans do tokenizer."""
+        lyric_words: list[LyricWord] = []
         for (raw_text, _), spans in zip(word_pairs, token_spans, strict=False):
             if not spans:
                 continue
@@ -196,5 +218,44 @@ class MmsForcedAligner(ForcedAlignerPort):
                     end_time=w_end,
                 )
             )
-
         return lyric_words
+
+    def _constrain_word_durations(
+        self, words: list[LyricWord]
+    ) -> list[LyricWord]:
+        """Limita esticamentos anômalos causados pela dispersão do trellis CTC sobre pausas/silêncios."""
+        if not words:
+            return []
+
+        constrained: list[LyricWord] = []
+        total_words = len(words)
+
+        for i, word in enumerate(words):
+            w_start = word.start_time
+            w_end = word.end_time
+            w_dur = w_end - w_start
+
+            if i == total_words - 1:
+                # Na última palavra antes de uma pausa/solo instrumental, limita com base no ritmo anterior
+                ref_dur = 0.6
+                if total_words > 1:
+                    prev_durs = [w.end_time - w.start_time for w in constrained]
+                    ref_dur = sum(prev_durs) / len(prev_durs)
+
+                max_last_dur = min(3.8, max(3.0, ref_dur * 3.5))
+                if w_dur > max_last_dur:
+                    w_end = round(w_start + max_last_dur, 2)
+            else:
+                # Palavras intermediárias não devem ultrapassar teto fisiológico razoável
+                if w_dur > 4.0:
+                    w_end = round(w_start + 4.0, 2)
+
+            constrained.append(
+                LyricWord(
+                    text=word.text,
+                    start_time=w_start,
+                    end_time=max(w_start, w_end),
+                )
+            )
+
+        return constrained

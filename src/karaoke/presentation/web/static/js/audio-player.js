@@ -13,10 +13,12 @@ export class AudioPlayer {
     // Callbacks de eventos
     this.onTimeUpdate = null;
     this.onLineChange = null;
+    this.onHighResTimeUpdate = null;
     this.onPlay = null;
     this.onPause = null;
     this.onEnded = null;
 
+    this._rafId = null;
     this._bindEvents();
   }
 
@@ -34,16 +36,41 @@ export class AudioPlayer {
     });
 
     this.audio.addEventListener("play", () => {
+      this._startHighResSync();
       if (this.onPlay) this.onPlay();
     });
 
     this.audio.addEventListener("pause", () => {
+      this._stopHighResSync();
       if (this.onPause) this.onPause();
     });
 
     this.audio.addEventListener("ended", () => {
+      this._stopHighResSync();
       if (this.onEnded) this.onEnded();
     });
+  }
+
+  _startHighResSync() {
+    this._stopHighResSync();
+    const tick = () => {
+      if (!this.audio.paused && !this.audio.ended) {
+        const currentTime = this.audio.currentTime || 0;
+        this._syncLyrics(currentTime);
+        if (this.onHighResTimeUpdate) {
+          this.onHighResTimeUpdate(currentTime, currentTime - this.lyricsOffset);
+        }
+        this._rafId = requestAnimationFrame(tick);
+      }
+    };
+    this._rafId = requestAnimationFrame(tick);
+  }
+
+  _stopHighResSync() {
+    if (this._rafId) {
+      cancelAnimationFrame(this._rafId);
+      this._rafId = null;
+    }
   }
 
   /**
@@ -68,7 +95,11 @@ export class AudioPlayer {
    */
   setLyricsOffset(offsetSeconds) {
     this.lyricsOffset = Number(offsetSeconds) || 0.0;
-    this._syncLyrics(this.getCurrentTime());
+    const currentTime = this.getCurrentTime();
+    this._syncLyrics(currentTime);
+    if (this.onHighResTimeUpdate) {
+      this.onHighResTimeUpdate(currentTime, currentTime - this.lyricsOffset);
+    }
   }
 
   getLyricsOffset() {
@@ -86,6 +117,11 @@ export class AudioPlayer {
   seek(seconds) {
     if (this.audio.duration) {
       this.audio.currentTime = Math.max(0, Math.min(seconds, this.audio.duration));
+      const currentTime = this.getCurrentTime();
+      this._syncLyrics(currentTime);
+      if (this.onHighResTimeUpdate) {
+        this.onHighResTimeUpdate(currentTime, currentTime - this.lyricsOffset);
+      }
     }
   }
 
