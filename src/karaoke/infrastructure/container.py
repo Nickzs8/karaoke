@@ -37,6 +37,8 @@ class AppContainer:
         self.separator = DemucsSeparatorAdapter(
             model_name=self.config.demucs_model,
             device=self.config.device,
+            shifts=self.config.demucs_shifts,
+            overlap=self.config.demucs_overlap,
         )
         self.lyrics_provider = LrclibAdapter(base_url=self.config.lrclib_url)
         self.pitch_extractor = LibrosaPitchExtractorAdapter()

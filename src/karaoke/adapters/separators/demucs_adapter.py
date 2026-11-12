@@ -22,8 +22,8 @@ class DemucsSeparatorAdapter(AudioSeparatorPort):
         self,
         model_name: str = "htdemucs",
         device: str | None = None,
-        shifts: int = 1,
-        overlap: float = 0.25,
+        shifts: int = 0,
+        overlap: float = 0.1,
     ) -> None:
         self.model_name = model_name
         self.shifts = shifts

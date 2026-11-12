@@ -22,6 +22,16 @@ class TestDemucsSeparatorAdapter:
         port: AudioSeparatorPort = adapter
         assert port is not None
 
+    def test_default_performance_parameters(self) -> None:
+        adapter = DemucsSeparatorAdapter(device="cpu")
+        assert adapter.shifts == 0
+        assert adapter.overlap == 0.1
+
+    def test_custom_performance_parameters(self) -> None:
+        adapter = DemucsSeparatorAdapter(device="cpu", shifts=2, overlap=0.3)
+        assert adapter.shifts == 2
+        assert adapter.overlap == 0.3
+
     def test_detect_device_cuda_fallback(self) -> None:
         adapter_cpu = DemucsSeparatorAdapter(device="cpu")
         assert adapter_cpu.device == "cpu"

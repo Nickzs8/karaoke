@@ -47,6 +47,8 @@ class AppConfig:
     storage_dir: Path
     device: str = "cpu"
     demucs_model: str = "htdemucs"
+    demucs_shifts: int = 0
+    demucs_overlap: float = 0.1
     base_audio_url: str = "/static/audio"
     lrclib_url: str = "https://lrclib.net/api"
     pitch_weight: float = 0.7
@@ -104,6 +106,8 @@ class AppConfig:
         active_device = detect_device(raw_device)
 
         demucs_model = os.getenv("KARAOKE_DEMUCS_MODEL", "htdemucs")
+        demucs_shifts = int(os.getenv("KARAOKE_DEMUCS_SHIFTS", "0"))
+        demucs_overlap = float(os.getenv("KARAOKE_DEMUCS_OVERLAP", "0.1"))
         base_audio_url = os.getenv("KARAOKE_BASE_AUDIO_URL", "/static/audio")
         lrclib_url = os.getenv("KARAOKE_LRCLIB_URL", "https://lrclib.net/api")
 
@@ -116,6 +120,8 @@ class AppConfig:
             storage_dir=storage_path,
             device=active_device,
             demucs_model=demucs_model,
+            demucs_shifts=demucs_shifts,
+            demucs_overlap=demucs_overlap,
             base_audio_url=base_audio_url,
             lrclib_url=lrclib_url,
             pitch_weight=pitch_weight,

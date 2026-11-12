@@ -70,7 +70,9 @@ class MmsForcedAligner(ForcedAlignerPort):
             # Limita a fatia de áudio para o limite razoável do verso cantado,
             # impedindo que dezenas de segundos de solos ou silêncio entrem no aligner
             expected_max_duration = max(6.0, len(word_pairs) * 2.0)
-            capped_end_time = min(line.end_time, line.start_time + expected_max_duration)
+            capped_end_time = min(
+                line.end_time, line.start_time + expected_max_duration
+            )
 
             chunk_start, chunk_waveform = self._load_audio_slice(
                 audio_path=audio_path,
@@ -220,10 +222,8 @@ class MmsForcedAligner(ForcedAlignerPort):
             )
         return lyric_words
 
-    def _constrain_word_durations(
-        self, words: list[LyricWord]
-    ) -> list[LyricWord]:
-        """Limita esticamentos anômalos causados pela dispersão do trellis CTC sobre pausas/silêncios."""
+    def _constrain_word_durations(self, words: list[LyricWord]) -> list[LyricWord]:
+        """Limita esticamentos anômalos causados pela dispersão do trellis CTC."""
         if not words:
             return []
 
@@ -236,7 +236,7 @@ class MmsForcedAligner(ForcedAlignerPort):
             w_dur = w_end - w_start
 
             if i == total_words - 1:
-                # Na última palavra antes de uma pausa/solo instrumental, limita com base no ritmo anterior
+                # Na última palavra antes de uma pausa, limita pelo ritmo anterior
                 ref_dur = 0.6
                 if total_words > 1:
                     prev_durs = [w.end_time - w.start_time for w in constrained]
@@ -246,7 +246,7 @@ class MmsForcedAligner(ForcedAlignerPort):
                 if w_dur > max_last_dur:
                     w_end = round(w_start + max_last_dur, 2)
             else:
-                # Palavras intermediárias não devem ultrapassar teto fisiológico razoável
+                # Palavras intermediárias têm teto fisiológico razoável
                 if w_dur > 4.0:
                     w_end = round(w_start + 4.0, 2)
 

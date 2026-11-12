@@ -70,6 +70,8 @@ class TestAppConfig:
         assert config.base_dir.is_dir() is True
         assert config.storage_dir.name == "storage"
         assert config.demucs_model == "htdemucs"
+        assert config.demucs_shifts == 0
+        assert config.demucs_overlap == 0.1
         assert config.base_audio_url == "/static/audio"
         assert config.lrclib_url == "https://lrclib.net/api"
         assert config.pitch_weight == 0.7
@@ -90,6 +92,8 @@ class TestAppConfig:
         monkeypatch.setenv("KARAOKE_STORAGE_DIR", str(custom_storage))
         monkeypatch.setenv("KARAOKE_DEVICE", "cpu")
         monkeypatch.setenv("KARAOKE_DEMUCS_MODEL", "mdx_extra")
+        monkeypatch.setenv("KARAOKE_DEMUCS_SHIFTS", "2")
+        monkeypatch.setenv("KARAOKE_DEMUCS_OVERLAP", "0.2")
         monkeypatch.setenv("KARAOKE_BASE_AUDIO_URL", "/stream/audio")
         monkeypatch.setenv("KARAOKE_PITCH_WEIGHT", "0.8")
         monkeypatch.setenv("KARAOKE_TIMING_WEIGHT", "0.2")
@@ -100,6 +104,8 @@ class TestAppConfig:
         assert config.storage_dir == custom_storage.resolve()
         assert config.device == "cpu"
         assert config.demucs_model == "mdx_extra"
+        assert config.demucs_shifts == 2
+        assert config.demucs_overlap == 0.2
         assert config.base_audio_url == "/stream/audio"
         assert config.pitch_weight == 0.8
         assert config.timing_weight == 0.2
@@ -167,6 +173,8 @@ class TestAppContainer:
         assert isinstance(container.storage, LocalStorageAdapter)
         assert isinstance(container.downloader, YtDlpDownloaderAdapter)
         assert isinstance(container.separator, DemucsSeparatorAdapter)
+        assert container.separator.shifts == 0
+        assert container.separator.overlap == 0.1
         assert isinstance(container.lyrics_provider, LrclibAdapter)
         assert isinstance(container.pitch_extractor, LibrosaPitchExtractorAdapter)
         assert isinstance(container.scorer, DtwPerformanceScorerAdapter)
